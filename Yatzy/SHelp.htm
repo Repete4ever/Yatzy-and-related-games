@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Yatzy</title>
+	</head>
+	<body>
+		<p><A href="#Yatzy">YATZY</A></p>
+		<p><A href="#Yahtzee">YAHTZEE</A></p>
+		<p><A href="#Maxiyatzy">MAXIYATZY</A></p>
+		<p><A href="http://www.balut.org/">BALUT</A></p>
+		<p>Spelarna innehåller<br/>5 tärningar (Maxiyatzy dock 6).<br/>En spelare ska 
+			försöka fylla i så många som möjligt av de tärningskombinationer som finns på 
+			protokollet. Kombinationerna får tas i valfri ordning.<br/>
+			<br/>
+			Varje gång en spelare står i tur, får han högst tre kast med valfritt antal 
+			tärningar. Spelaren får själv bestämma vilka tärningar han ska kasta om för att 
+			försöka få ihop en ej ifylld kombination.</p>
+		<p><FONT size="+1"><A name="Yatzy">Yatzy</A> regler:</FONT><br/>
+			Tre kast per omgång. Ett kast måste göras per omgång. Ej utnyttjade kast kan <B>ikke</B>
+			sparas till följande omgångar.<br/>
+			<TABLE class="smallblack" id="Table1" borderColor="#000000" cellSpacing="0" cellPadding="1" width="381" bgColor="#ffffff" border="1">
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="70"/></td>
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="250"/><br/>
+						Poäng</td>
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="120"/><br/>
+						Exempel</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Ettor</B></td>
+					<td>Antalet ögon på de tärningar som visar ett.</td>
+					<td>3 1 1 6 1=3 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Tvåor</B></td>
+					<td>Antalet ögon på de tärningar som visar två.</td>
+					<td>2 4 3 2 6=4 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Treor</B></td>
+					<td>Antalet ögon på de tärningar som visar tre.</td>
+					<td>3 2 3 4 3=9 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Fyror</B></td>
+					<td>Antalet ögon på de tärningar som visar fyra.</td>
+					<td>4 4 4 5 4=16 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Femmor</B></td>
+					<td>Antalet ögon på de tärningar som visar fem.</td>
+					<td>5 1 5 5 4=15 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Sexor</B></td>
+					<td>Antalet ögon på de tärningar som visar sex.</td>
+					<td>4 6 3 6 6=18 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Bonus</B></td>
+					<td>50 poäng om summan av fälten Ettor t.o.m. Sexor är 63 poäng eller mer. Är 
+						summan 62 eller mindre får man 0 poäng.</td>
+					<td><br/></td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Ett par</B></td>
+					<td>Två tärningar som visar lika. Antalet ögon på paret räknas.</td>
+					<td>6 4 2 6 5=12 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Två par</B></td>
+					<td>Två par. Paren måste vara olika.</td>
+					<td>2 3 3 5 5=16 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Tretal</B></td>
+					<td>Tre tärningar som visar lika.</td>
+					<td>4 5 3 5 5=15 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Fyrtal</B></td>
+					<td>Fyra tärningar som visar lika.</td>
+					<td>2 4 2 2 2=8 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Liten straight</B></td>
+					<td>Tärningarna måste visa 1 2 3 4 5. För Liten straight får man 15 poäng.</td>
+					<td>1 2 3 4 5=15 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Stor straight</B></td>
+					<td>Tärningarna måste visa 2 3 4 5 6.För Stor straight får man 20 poäng.</td>
+					<td>2 3 4 5 6=20 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td height="16"><B>Kåk </B>
+					</td>
+					<td height="16">Ett par och Tretal. Tärningarna i paret och tretalet måste vara 
+						olika.</td>
+					<td height="16">4 4 6 6 6=26 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Chans</B></td>
+					<td>Räkna ihop antalet ögon på alla tärningar.</td>
+					<td>3 4 2 6 5=20 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Yatzy</B></td>
+					<td>Alla tärningar visar lika. 50 poäng ges.</td>
+					<td>4 4 4 4 4=50 poäng</td>
+				</tr>
+			</TABLE>
+			<br/>
+		</p>
+		<p><FONT size="+1"><A name="Yahtzee">Yahtzee</A> regler:</FONT><br/>
+			Tre kast per omgång. Ett kast måste göras per omgång. Ej utnyttjade kast kan <B>icke</B>
+			sparas till följande omgångar.<br/>
+			<TABLE class="smallblack" id="Table2" borderColor="#000000" cellSpacing="0" cellPadding="1" width="381" bgColor="#ffffff" border="1">
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="70"/></td>
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="250"/><br/>
+						Poäng</td>
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="120"/><br/>
+						Exempel</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Ettor</B></td>
+					<td>Antalet ögon på de tärningar som visar ett.</td>
+					<td>3 1 1 6 1=3 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Tvåor</B></td>
+					<td>Antalet ögon på de tärningar som visar två.</td>
+					<td>2 4 3 2 6=4 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Treor</B></td>
+					<td>Antalet ögon på de tärningar som visar tre.</td>
+					<td>3 2 3 4 3=9 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Fyror</B></td>
+					<td>Antalet ögon på de tärningar som visar fyra.</td>
+					<td>4 4 4 5 4=16 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Femmor</B></td>
+					<td>Antalet ögon på de tärningar som visar fem.</td>
+					<td>5 1 5 5 4=15 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Sexor</B></td>
+					<td>Antalet ögon på de tärningar som visar sex.</td>
+					<td>4 6 3 6 6=18 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Bonus</B></td>
+					<td>35 poäng om summan av fälten Ettor t.o.m. Sexor är 63 poäng eller mer. Är 
+						summan 62 eller mindre får man 0 poäng.</td>
+					<td><br/></td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Tretal</B></td>
+					<td>Tre tärningar som visar lika. Räkna ihop antalet ögon på alla tärningar.</td>
+					<td>4 5 3 5 5=22 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Fyrtal</B></td>
+					<td>Fyra tärningar som visar lika. Räkna ihop antalet ögon på alla tärningar.</td>
+					<td>2 4 2 2 2=12 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Liten straight</B></td>
+					<td>Tärningarna måste visa fyra på rad. För Liten straight får man 30 poäng.</td>
+					<td>1 2 3 4 4=30 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Stor straight</B></td>
+					<td>Tärningarna måste visa fem på rad, tex. 2 3 4 5 6.För Stor straight får man 40 
+						poäng.</td>
+					<td>2 3 4 5 6=40 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td height="16"><B>Kåk </B>
+					</td>
+					<td height="16">Ett par och Tretal. Tärningarna i paret och tretalet måste vara 
+						olika. 25 poäng u-ansett antalet ögon.</td>
+					<td height="16">4 4 6 6 6=25 poäng</td>
+				</tr>
+				<tr>
+					<td><B>Yahtzee</B></td>
+					<td>Alla tärningar visar lika. 50 poäng ges.</td>
+					<td>4 4 4 4 4=50 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Chans</B></td>
+					<td>Räkna ihop antalet ögon på alla tärningar.</td>
+					<td>3 4 2 6 5=20 poäng</td>
+				</tr>
+			</TABLE>
+			<br/>
+		<p><FONT size="+1"><A name="MaxiYatzy">MaxiYatzy</A> regler:</FONT><br/>
+			Tre kast per omgång. Ett kast måste göras per omgång. Ej utnyttjade kast kan 
+			sparas till följande omgångar.<br/>
+			<TABLE class="smallblack" id="Table3" borderColor="#000000" cellSpacing="0" cellPadding="1" width="381" bgColor="#ffffff" border="1">
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="70"/></td>
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="250"/><br/>
+						Poäng</td>
+					<td><IMG height="1" src="http://user.tninet.se/~sgf478u/maxiyatzy/spacer.gif" width="120"/><br/>
+						Exempel</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Ettor</B></td>
+					<td>Antalet ögon på de tärningar som visar ett.</td>
+					<td>3 1 1 6 1 4=3 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Tvåor</B></td>
+					<td>Antalet ögon på de tärningar som visar två.</td>
+					<td>2 5 4 3 2 6=4 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Treor</B></td>
+					<td>Antalet ögon på de tärningar som visar tre.</td>
+					<td>3 2 1 3 4 3=9 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Fyror</B></td>
+					<td>Antalet ögon på de tärningar som visar fyra.</td>
+					<td>4 4 3 4 5 4=16 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Femmor</B></td>
+					<td>Antalet ögon på de tärningar som visar fem.</td>
+					<td>5 1 2 5 5 4=15 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Sexor</B></td>
+					<td>Antalet ögon på de tärningar som visar sex.</td>
+					<td>4 6 3 1 6 6=18 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Bonus</B></td>
+					<td>100 poäng om summan av fälten Ettor t.o.m. Sexor är 84 poäng eller mer. Är 
+						summan 83 eller mindre får man 0 poäng.</td>
+					<td><br/></td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Ett par</B></td>
+					<td>Två tärningar som visar lika. Antalet ögon på paret räknas.</td>
+					<td>6 4 2 6 5 1=12 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Två par</B></td>
+					<td>Två par. Paren måste vara olika.</td>
+					<td>2 1 3 3 5 5=16 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Tre par</B></td>
+					<td>Tre par. Paren måste vara olika.</td>
+					<td>2 2 5 5 6 6=26 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Tretal</B></td>
+					<td>Tre tärningar som visar lika.</td>
+					<td>4 5 3 5 5 4=15 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Fyrtal</B></td>
+					<td>Fyra tärningar som visar lika.</td>
+					<td>2 4 2 2 5 2=8 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Femtal</B></td>
+					<td>Fem tärningar som visar lika.</td>
+					<td>3 3 2 3 3 3=15 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Liten straight</B></td>
+					<td>Tärningarna måste visa 1 2 3 4 5. Den sista tärningen får visa vad som helst. 
+						För Liten straight får man 15 poäng.</td>
+					<td>1 2 3 4 5 3=15 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Stor straight</B></td>
+					<td>Tärningarna måste visa 2 3 4 5 6. Den sista tärningen får visa vad som helst. 
+						För Storstraight får man 20 poäng.</td>
+					<td>2 3 4 5 6 6=20 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td height="3"><B>Full straight</B></td>
+					<td height="3">Tärningarna måste visa 1 2 3 4 5 6. För Full straight får man 21 
+						poäng.</td>
+					<td height="3">1 2 3 4 5 6=21 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td height="16"><B>Kåk 2+3</B></td>
+					<td height="16">Ett par och Tretal. Tärningarna i paret och tretalet måste vara 
+						olika.</td>
+					<td height="16">3 4 4 6 6 6=26 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Hus 3+3</B></td>
+					<td>Två Tretal. Tärningarna i tretalen måste vara olika.</td>
+					<td>2 2 2 5 5 5=21 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Torn 2+4</B></td>
+					<td>Ett par och Fyrtal. Tärningarna i paret och tretalet måste vara olika.</td>
+					<td>3 3 6 6 6 6=30 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Chans</B></td>
+					<td>Räkna ihop antalet ögon på alla tärningar.</td>
+					<td>3 4 2 6 5 4=24 poäng</td>
+				</tr>
+				<tr borderColor="#000000" bgColor="#ffffff">
+					<td><B>Yatzy!</B></td>
+					<td>Alla tärningar visar lika. 100 poäng ges.</td>
+					<td>4 4 4 4 4 4=100 poäng</td>
+				</tr>
+			</TABLE>
+		<p><br/>
+		</p>
+		<p><br/></p>
+		<p><br/>
+		</p>
+	</body>
+</html>

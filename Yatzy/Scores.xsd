@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema id="Scores" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Scores">
+		<xs:complexType>
+			<xs:choice maxOccurs="unbounded">
+				<xs:element name="Score">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Game" type="xs:string" />
+							<xs:element name="Player" type="xs:string" />
+							<xs:element name="Commenced" type="xs:string" minOccurs="0" />
+							<xs:element name="Ended" type="xs:string" />
+							<xs:element name="Point" type="xs:integer" />
+							<xs:element name="Bonus" type="xs:integer" minOccurs="0" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
