@@ -67,7 +67,7 @@ namespace Yatzy
         TextBox[,] Rubrik;
         TextBox[] Items;
         GameOfDice Game;
-        Panel p;
+        readonly Panel p;
         bool[,] UsedScores;
 
         int TargetDie = -1; // when selecting dice by merely moving the mouse
@@ -115,11 +115,24 @@ namespace Yatzy
             }
         }
 
+        private const string RegFolder = @"Software\PHDGames\";
+
+        private string CollectGameName()
+        {
+            RegistryKey GameKey = Registry.CurrentUser.CreateSubKey(RegFolder);
+            return GameKey != null ? GameKey.GetValue("Game Name", Player).ToString() : "Yatzy";
+        }
+
+        private void SaveGameName(string name)
+        {
+            RegistryKey GameKey = Registry.CurrentUser.CreateSubKey(RegFolder);
+            if (GameKey != null) GameKey.SetValue("Game Name", name);
+        }
+
         string Player;
 
         private void CollectPlayerName()
         {
-
             try
             {
                 Player = Environment.UserName;
@@ -129,7 +142,7 @@ namespace Yatzy
                 Player = "NN";
             }
 
-            RegistryKey GameKey = Registry.CurrentUser.CreateSubKey(@"Software\PHDGames\");
+            RegistryKey GameKey = Registry.CurrentUser.CreateSubKey(RegFolder);
             Player = GameKey.GetValue("Player Name", Player).ToString();
 
             PlayerNameDialog dlg = new PlayerNameDialog {UserName = Player};
@@ -144,11 +157,6 @@ namespace Yatzy
         }
 
         DateTime Commenced = DateTime.Now;
-
-        private void CollectCommenced()
-        {
-            Commenced = DateTime.Now;
-        }
 
         ScoreView _score;
 
@@ -250,8 +258,8 @@ namespace Yatzy
                     /* string Filter = */ "Game = " + "'" + Name + "'",
                     /* string Sort = */ "Bonus DESC, Point DESC",
                 DataViewRowState.CurrentRows);
-                int HiLen = 10;
-                string HiScore = "You made the Top 10!";
+                const int HiLen = 10;
+                const string HiScore = "You made the Top 10!";
                 bool ScoreHigh = false;
                 if (Score.Count <= HiLen)
                 {
@@ -322,14 +330,14 @@ namespace Yatzy
                 //					break;
                 //			}
                 //			Target.WriteByte((byte)b);
-                for (int i = 0; i < HelloXML.Length; i++)
-                    Target.WriteByte((byte)HelloXML[i]);
+                foreach (char t in HelloXML)
+                    Target.WriteByte((byte)t);
                 // we are only providing UNIX LF 
                 // Is there a platform independant way of terminating lines, I wonder?
                 // Anyway, this code will when executing on windows create a file with mixed line terminations
                 Target.WriteByte((byte)'\n');
-                for (int i = 0; i < Xsl.Length; i++)
-                    Target.WriteByte((byte)Xsl[i]);
+                foreach (char t in Xsl)
+                    Target.WriteByte((byte)t);
                 Target.WriteByte((byte)'\n');
                 while (true)
                 {
@@ -357,7 +365,7 @@ namespace Yatzy
 
         private void myMouseDecider(object sender)
         {
-            string R = "Rubrik";
+            const string R = "Rubrik";
             if (!((Control)sender).Name.StartsWith(R))
                 return;
             string S = ((Control)sender).Name;
@@ -528,12 +536,14 @@ namespace Yatzy
             if (Game == null)
                 Game = new Yatzy();
 
+            SaveGameName(GameText);
+
             Game.InhabitTables();
 
             // Set the form's title
-            Text = Game.toString() + " on collision course with C#";
+            Text = Game.toString() + " on a date with C#";
             Name = Game.toString();
-            this.Icon = Resources.Yatzy;
+            Icon = Resources.Yatzy;
 
             DiceVec = new int[Game.Dice];
             OldDice = new int[Game.Dice];
@@ -710,7 +720,7 @@ namespace Yatzy
             // Instantiate a panel for scoring
             p = new Panel();
 
-            InitForm("Maxiyatzy");
+            InitForm(CollectGameName());
 
             CollectPlayerName();
         }
@@ -1216,7 +1226,7 @@ namespace Yatzy
                 TabIndex = 1
             };
 
-            int button = 64;
+            const int button = 64;
             Button okButton = new Button
             {
                 Location = new Point(width - button - border, 12),
@@ -1243,6 +1253,12 @@ namespace Yatzy
             Controls.Add(okButton);
             Controls.Add(notOkButton);
 
+        }
+
+        public override sealed string Text
+        {
+            get { return base.Text; }
+            set { base.Text = value; }
         }
     }
 

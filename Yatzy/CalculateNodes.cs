@@ -28,8 +28,6 @@ namespace Yatzy
 
         private void BackgroundWorker1OnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs)
         {
-            BackgroundWorker bw = (BackgroundWorker)sender;
-            bw.ReportProgress(0);
             Close();
         }
 

@@ -688,68 +688,7 @@ namespace Yatzy
             inn[5] = 0;
         }
 
-        //internal void Calcul(int Nodes, string ExpectFilename, string VarianceFilename)
-        //{
-        //    using (var eos = new FileStream(ExpectFilename, FileMode.Create))
-        //    using (var vos = new FileStream(VarianceFilename, FileMode.Create))
-        //    using (var esw = new BinaryWriter(eos))
-        //    using (var vsw = new BinaryWriter(vos))
-        //    {
-        //        int NodeNo;
-        //        int[] n = new int[6];
-
-        //        int[,] UnusedI = new int[UsableItems, 2];
-
-        //        for (NodeNo = 1; NodeNo <= Nodes; NodeNo++)
-        //        {
-        //            var ActiveI = 0;
-        //            for (int i = 0; i < UsableItems; i++)
-        //            {
-        //                int d = ActiveItem(NodeNo, i);
-        //                if (d > 0)
-        //                {
-        //                    UnusedI[ActiveI, 0] = i + 1;
-        //                    UnusedI[ActiveI, 1] = d;
-        //                    ActiveI++;
-        //                }
-        //            }
-
-        //            if (expect[NodeNo] == 0)
-        //            {
-        //                GamePlan(6, n, UnusedI, NodeNo, ActiveI, 0);
-        //                float e = (float)expect[NodeNo];
-        //                try
-        //                {
-        //                    esw.Write(e);
-        //                }
-        //                catch (IOException)
-        //                {
-        //                    throw new ApplicationException("Trouble with node " + NodeNo);
-        //                }
-        //                if (varians)
-        //                {
-        //                    float v = (float)vari[NodeNo];
-        //                    //						pout.print(" " + ((System.Double)v).ToString("F4"));
-        //                    try
-        //                    {
-        //                        vsw.Write(v);
-        //                        //							if (NodeNo % 16 == 0) 
-        //                        //								vsw.Flush();
-        //                    }
-        //                    catch (IOException)
-        //                    {
-        //                        throw new ApplicationException("Double Trouble with node " + NodeNo);
-        //                    }
-        //                }
-        //            }
-        //        }
-
-        //        esw.Flush();
-        //        vsw.Flush();
-        //    }
-        //}
-
-        public void Status(int index, int[] nz)
+        private void Status(int index, int[] nz)
         {
             int i;
             int nn;
@@ -798,7 +737,6 @@ namespace Yatzy
 
             if (GenerateTable)
             {
-                //Calcul(Nodes, expect_fn, var_fn);
                 CalculateNodes calc = new CalculateNodes(this, Nodes, expect_fn, var_fn);
                 calc.Start();
                 calc.ShowDialog();
