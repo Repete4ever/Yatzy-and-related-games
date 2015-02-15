@@ -58,7 +58,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "CalculateNodes";
-            this.Text = "Calculate Nodes";
+            this.Text = "Calculate Nodes (wait please)";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CalculateNodes_FormClosing);
             this.ResumeLayout(false);
 

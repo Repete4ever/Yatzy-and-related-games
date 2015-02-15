@@ -40,8 +40,6 @@ namespace Yatzy
             myPotentialHighPoints = PotentialHighPoints;
         }
 
-        public abstract string toString();
-
         public int Dice
         {
             get { return myDice; }
@@ -231,15 +229,26 @@ namespace Yatzy
             return "";
         }
 
-        public virtual string ValueIt(int[] nw, int i, int j)
+        //public virtual string ValueIt(int[] nw, int i, int j)
+        //{
+        //    int d = nw.Sum();
+        //    if (d < Dice)
+        //        throw new ArgumentException("Not a proper roll");
+
+        //    points(nw);
+
+        //    return "" + pts[i];
+        //}
+
+        public virtual int ValueIt(int[] nw, int i, int j)
         {
             int d = nw.Sum();
             if (d < Dice)
-                throw new Exception("Not a proper roll");
+                throw new ArgumentException("Not a proper roll");
 
             points(nw);
 
-            return "" + pts[i];
+            return pts[i];
         }
 
         public enum Language { Danish, Swedish, English };
@@ -731,9 +740,9 @@ namespace Yatzy
                 vari = new double[Nodes + 1];
             }
 
-            string expect_fn = toString() + ".tbl";
+            string expect_fn = ToString() + ".tbl";
             bool GenerateTable = !File.Exists(expect_fn);
-            string var_fn = toString() + "v.tbl";
+            string var_fn = ToString() + "v.tbl";
 
             if (GenerateTable)
             {
@@ -792,7 +801,7 @@ namespace Yatzy
             InitGameOfDice(5, 15, 50);
         }
 
-        public override string toString()
+        public override string ToString()
         {
             return "Yatzy";
         }
@@ -883,12 +892,13 @@ namespace Yatzy
             int chance = hus + 1;
             int yatzy_ = chance + 1;
 
-            int maks = 0, isum = 0, j, iv, ih = 0;
+            int maks = 0, isum = 0;
+            int ih = 0;
 
             for (int i = 6; i <= MaxItem; i++) pts[i] = 0;
-            for (j = 6; j >= 1; j--)
+            for (int j = 6; j >= 1; j--)
             {
-                iv = nx[j - 1];
+                var iv = nx[j - 1];
                 pts[j - 1] = iv * j;
                 isum += iv * j;
                 if (iv > maks)
@@ -947,7 +957,7 @@ namespace Yatzy
             InitGameOfDice(5, 13, 35);
         }
 
-        public override string toString()
+        public override string ToString()
         {
             return "Yahtzee";
         }
@@ -1082,7 +1092,7 @@ namespace Yatzy
             InitGameOfDice(6, 20, 100);
         }
 
-        public override string toString()
+        public override string ToString()
         {
             return "Maxiyatzy";
         }
@@ -1299,7 +1309,7 @@ namespace Yatzy
             myPotentialChoice = myPotentialSixes;
         }
 
-        public override string toString()
+        public override string ToString()
         {
             return "Balut";
         }
@@ -1675,22 +1685,22 @@ namespace Yatzy
             return "";
         }
 
-        public override string ValueIt(int[] nw, int i, int j)
+        public override int ValueIt(int[] nw, int i, int j)
         {
             foreach (int di in nw)
             { // check for die with six sides
                 if (di < 1)
-                    return "UNFL"; // can't be a proper roll af dice
+                    throw new ArgumentException("UNFL"); // can't be a proper roll af dice
                 if (di > 6)
-                    return "OVFL"; // can't be a proper roll af dice
+                    throw new ArgumentException("OVFL"); // can't be a proper roll af dice
             }
 
             if (j >= UsableScoreBoxesPerItem)
-                return "NA"; // these columns are not of value ;-)
+                throw new ArgumentException("NA"); // these columns are not of value ;-)
 
             points(nw);
 
-            return "" + pts[i];
+            return pts[i];
         }
 
         public override void NewGame()

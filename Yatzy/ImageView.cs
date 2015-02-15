@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Globalization;
@@ -54,20 +55,21 @@ namespace Yatzy
 						  "Registrere resultatet i tabellen",
 						  "Select a score box"
 					  };
+
         int RollCounter;
         int Rounds;
 
         // Todo implement computer player
         const int players = 2;
 
-        const int ScoreCard = 150; // scorecard starts here
+        const int ScoreCardStart = 150; // scorecard starts here
 
         readonly Button TerningeKast = new Button();
         string TerningeKastText;
         TextBox[,] Rubrik;
         TextBox[] Items;
         GameOfDice Game;
-        readonly Panel p;
+        readonly Panel ScoreCard;
         bool[,] UsedScores;
 
         int TargetDie = -1; // when selecting dice by merely moving the mouse
@@ -81,17 +83,18 @@ namespace Yatzy
                 LineAlignment = StringAlignment.Center
             };
 
-            SolidBrush b = new SolidBrush(BackColor);
-            g.FillRectangle(b, Pins);
-            if (Game.SavedRolls > 0)
+            using (var b = new SolidBrush(BackColor))
             {
-                SolidBrush br = new SolidBrush(Color.Black);
-                string PinCount = String.Format("{0}", Game.SavedRolls);
-                g.DrawString(PinCount, Font, br, Pins, format);
-                br.Dispose();
+                g.FillRectangle(b, Pins);
+                if (Game.SavedRolls > 0)
+                {
+                    using (var br = new SolidBrush(Color.Black))
+                    {
+                        string PinCount = String.Format("{0}", Game.SavedRolls);
+                        g.DrawString(PinCount, Font, br, Pins, format);
+                    }
+                }
             }
-            b.Dispose();
-
         }
 
         private static int CollectLanguage()
@@ -115,7 +118,7 @@ namespace Yatzy
             }
         }
 
-        private const string RegFolder = @"Software\PHDGames\";
+        public const string RegFolder = @"Software\PHDGames\";
 
         private string CollectGameName()
         {
@@ -129,32 +132,7 @@ namespace Yatzy
             if (GameKey != null) GameKey.SetValue("Game Name", name);
         }
 
-        string Player;
-
-        private void CollectPlayerName()
-        {
-            try
-            {
-                Player = Environment.UserName;
-            }
-            catch
-            {
-                Player = "NN";
-            }
-
-            RegistryKey GameKey = Registry.CurrentUser.CreateSubKey(RegFolder);
-            Player = GameKey.GetValue("Player Name", Player).ToString();
-
-            PlayerNameDialog dlg = new PlayerNameDialog {UserName = Player};
-
-            if (dlg.ShowDialog(this) == DialogResult.OK)
-            {
-                Player = dlg.UserName;
-                GameKey.SetValue("Player Name", Player);
-                Invalidate();
-            }
-
-        }
+        readonly string Player;
 
         DateTime Commenced = DateTime.Now;
 
@@ -230,10 +208,8 @@ namespace Yatzy
         private void CheckHiScore()
         {
             const string ScoreFile = @"Scores.xml";
-            string OldScoreFile = ScoreFile;
+            const string OldScoreFile = ScoreFile;
             //		string ScoreFileSchema = @"Scores.xsd";
-            MemoryStream Source = null;
-            FileStream Target = null;
 
             try
             {
@@ -298,8 +274,8 @@ namespace Yatzy
                     _score = new ScoreView();
                 }
                 _score.Hide();
-                _score.Left = this.Size.Width + this.Left;
-                _score.Top = this.Top;
+                _score.Left = Size.Width + Left;
+                _score.Top = Top;
                 _score.Source = Score;
                 if (ScoreHigh)
                     _score.SelectRow = NewRow;
@@ -308,54 +284,49 @@ namespace Yatzy
                 _score.Focus();
 
                 // save scores in a Memorystream
-                Source = new MemoryStream();
-                Scores.WriteXml(Source, XmlWriteMode.WriteSchema);
-
-                // Scores.WriteXml(@"NewScores.xml", XmlWriteMode.WriteSchema);
-                // Lines below are lost after reading and writing but should be restored
-                // by inserting them at the top of the scores file afterward
-                // <?xml version="1.0" standalone="yes"?>
-                // <?xml-stylesheet type="text/xsl" href="Scores.xslt"?>
-                Source.Seek(0, SeekOrigin.Begin);
-                Target = new FileStream(OldScoreFile, FileMode.Open, FileAccess.Write, FileShare.None);
-                string HelloXML = "<?xml version=" + '"' + "1.0" + '"' + " standalone=" + '"' + "yes" + '"' + "?>";
-                string Xsl = "<?xml-stylesheet type=" + '"' + "text/xsl" + '"' + " href=" + '"' + "Scores.xslt" + '"' + "?>";
-                // Read first line
-                //			int b = Source.ReadByte();
-                //			while(b != '\n') 
-                //			{
-                //				Target.WriteByte((byte)b);
-                //				b = Source.ReadByte();
-                //				if(b == -1) 
-                //					break;
-                //			}
-                //			Target.WriteByte((byte)b);
-                foreach (char t in HelloXML)
-                    Target.WriteByte((byte)t);
-                // we are only providing UNIX LF 
-                // Is there a platform independant way of terminating lines, I wonder?
-                // Anyway, this code will when executing on windows create a file with mixed line terminations
-                Target.WriteByte((byte)'\n');
-                foreach (char t in Xsl)
-                    Target.WriteByte((byte)t);
-                Target.WriteByte((byte)'\n');
-                while (true)
+                using (var Source = new MemoryStream())
+                using (var Target = new FileStream(OldScoreFile, FileMode.Open, FileAccess.Write, FileShare.None))
                 {
-                    int b = Source.ReadByte();
-                    if (b == -1) break;
-                    Target.WriteByte((byte)b);
+                    Scores.WriteXml(Source, XmlWriteMode.WriteSchema);
+
+                    // Scores.WriteXml(@"NewScores.xml", XmlWriteMode.WriteSchema);
+                    // Lines below are lost after reading and writing but should be restored
+                    // by inserting them at the top of the scores file afterward
+                    // <?xml version="1.0" standalone="yes"?>
+                    // <?xml-stylesheet type="text/xsl" href="Scores.xslt"?>
+                    Source.Seek(0, SeekOrigin.Begin);
+                    string HelloXML = "<?xml version=" + '"' + "1.0" + '"' + " standalone=" + '"' + "yes" + '"' + "?>";
+                    string Xsl = "<?xml-stylesheet type=" + '"' + "text/xsl" + '"' + " href=" + '"' + "Scores.xslt" + '"' + "?>";
+                    // Read first line
+                    //			int b = Source.ReadByte();
+                    //			while(b != '\n') 
+                    //			{
+                    //				Target.WriteByte((byte)b);
+                    //				b = Source.ReadByte();
+                    //				if(b == -1) 
+                    //					break;
+                    //			}
+                    //			Target.WriteByte((byte)b);
+                    foreach (char t in HelloXML)
+                        Target.WriteByte((byte)t);
+                    // we are only providing UNIX LF 
+                    // Is there a platform independant way of terminating lines, I wonder?
+                    // Anyway, this code will when executing on windows create a file with mixed line terminations
+                    Target.WriteByte((byte)'\n');
+                    foreach (char t in Xsl)
+                        Target.WriteByte((byte)t);
+                    Target.WriteByte((byte)'\n');
+                    while (true)
+                    {
+                        int b = Source.ReadByte();
+                        if (b == -1) break;
+                        Target.WriteByte((byte)b);
+                    }
                 }
             }
             catch (Exception e)
             {
                 MessageBox.Show("" + e);
-            }
-            finally
-            {
-                if (Source != null)
-                    Source.Close();
-                if (Target != null)
-                    Target.Close();
             }
         }
 
@@ -366,9 +337,10 @@ namespace Yatzy
         private void myMouseDecider(object sender)
         {
             const string R = "Rubrik";
-            if (!((Control)sender).Name.StartsWith(R))
+            Control control = (Control) sender;
+            if (!control.Name.StartsWith(R))
                 return;
-            string S = ((Control)sender).Name;
+            string S = control.Name;
             int dot = S.IndexOf('.');
             DecidingRow = Int32.Parse(S.Substring(R.Length, dot - R.Length));
             DecidingCol = Int32.Parse(S.Substring(dot + 1));
@@ -461,24 +433,27 @@ namespace Yatzy
             }
             TerningeKast.Text = TerningeKastText;
 
-            Graphics g = Graphics.FromHwnd(Handle);
-
-            for (int r = 0; r < Game.Dice; r++)
+            using (var g = Graphics.FromHwnd(Handle))
             {
-                DiceRoll[r] = RollState.HoldMe;
-                DrawDie(g, r, DiceVec[r], Color.Red);
+                for (int r = 0; r < Game.Dice; r++)
+                {
+                    DiceRoll[r] = RollState.HoldMe;
+                    DrawDie(g, r, DiceVec[r], Color.Red);
+                }
+
+                for (int r = 0; r <= Game.MaxItem; r++)
+                    for (int d = Game.FirstScoreBox(r); d < Game.UsableScoreBoxesPerItem; d++)
+                    {
+                        if (!UsedScores[r, d])
+                        {
+                            Rubrik[r, d].Enabled = true;
+                            Rubrik[r, d].Text = "";
+                        }
+                    }
+
+                ShowSavedRolls(g);
             }
 
-            for (int r = 0; r <= Game.MaxItem; r++)
-                for (int d = Game.FirstScoreBox(r); d < Game.UsableScoreBoxesPerItem; d++)
-                {
-                    if (!UsedScores[r, d])
-                    {
-                        Rubrik[r, d].Enabled = true;
-                        Rubrik[r, d].Text = "";
-                    }
-                }
-            ShowSavedRolls(g);
         }
         // Function signatures must match the signature of the
         // MouseEventHandler class.
@@ -498,7 +473,7 @@ namespace Yatzy
             Int32 i = Int32.Parse(SenderName.Substring(6, dot - 6));
             Int32 j = Int32.Parse(SenderName.Substring(dot + 1));
 
-            Rubrik[i, j].Text = Game.ValueIt(DiceVec, i, j);
+            Rubrik[i, j].Text = Game.ValueIt(DiceVec, i, j).ToString();
             Cursor.Current = Cursors.Arrow;
         }
 
@@ -541,8 +516,8 @@ namespace Yatzy
             Game.InhabitTables();
 
             // Set the form's title
-            Text = Game.toString() + " on a date with C#";
-            Name = Game.toString();
+            Text = Game + " on a date with C#";
+            Name = Game.ToString();
             Icon = Resources.Yatzy;
 
             DiceVec = new int[Game.Dice];
@@ -578,9 +553,9 @@ namespace Yatzy
                     UsedScores[i, j] = false;
 
             // Make the panel nice
-            p.Height = 550;
-            p.Top = ScoreCard;
-            p.Width = 450;
+            ScoreCard.Height = 550;
+            ScoreCard.Top = ScoreCardStart;
+            ScoreCard.Width = 450;
 
             Rubrik = new TextBox[Game.MaxTotalItem + 1, 6];
             Items = new TextBox[Game.MaxTotalItem + 1];
@@ -588,8 +563,8 @@ namespace Yatzy
             const int ScoreWidth = ItemWidth / 3;
             const int ItemTop = 0;
 
-            p.Controls.Clear();
-            Controls.Remove(p);
+            ScoreCard.Controls.Clear();
+            Controls.Remove(ScoreCard);
 
             for (int Col = 0; Col < Game.MaxGroup; Col++)
             {
@@ -605,7 +580,7 @@ namespace Yatzy
                         else
                             Items[i].Width = ItemWidth;
                         Items[i].Text = Game.ItemText(i);
-                        p.Controls.Add(Items[i]);
+                        ScoreCard.Controls.Add(Items[i]);
                         Items[i].Enabled = false;
                         Items[i].BackColor = Color.Yellow;
                         Items[i].BorderStyle = BorderStyle.Fixed3D;
@@ -616,7 +591,7 @@ namespace Yatzy
                             if (j >= Game.FirstScoreBox(i))
                             {
                                 Rubrik[i, j] = new myTextBox();
-                                p.Controls.Add(Rubrik[i, j]);
+                                ScoreCard.Controls.Add(Rubrik[i, j]);
                                 Rubrik[i, j].Name = "Rubrik" + i + "." + j;
                                 Rubrik[i, j].Enabled = false;
                                 Rubrik[i, j].Left = Items[i].Left + ItemWidth + j * ScoreWidth;
@@ -624,14 +599,15 @@ namespace Yatzy
                                 Rubrik[i, j].Width = ScoreWidth;
                                 Rubrik[i, j].BackColor = j >= Game.UsableScoreBoxesPerItem ? Color.Coral : Color.AliceBlue;
                                 Rubrik[i, j].BorderStyle = BorderStyle.Fixed3D;
-                                Rubrik[i, j].MouseMove += this.myMouseMove;
-                                Rubrik[i, j].MouseHover += this.myMouseHover;
-                                Rubrik[i, j].MouseDown += this.myMouseDown;
-                                Rubrik[i, j].MouseLeave += this.myMouseLeave;
+                                Rubrik[i, j].MouseMove += myMouseMove;
+                                Rubrik[i, j].MouseHover += myMouseHover;
+                                Rubrik[i, j].MouseDown += myMouseDown;
+                                Rubrik[i, j].MouseLeave += myMouseLeave;
                             }
                     }
             }
-            Controls.Add(p);
+
+            Controls.Add(ScoreCard);
         }
 
 
@@ -718,11 +694,66 @@ namespace Yatzy
             Menu = menu;
 
             // Instantiate a panel for scoring
-            p = new Panel();
+            ScoreCard = new Panel();
 
             InitForm(CollectGameName());
 
-            CollectPlayerName();
+            PlayerName collectPlayerName = new PlayerName();
+            collectPlayerName.ShowDialog();
+            Player = collectPlayerName.UserName;
+
+            ScorePanel scorePanel = new ScorePanel(Game, TerningeKast);
+            scorePanel.Show();
+
+            for (int gameRow = 0; gameRow < Game.UsableItems; gameRow++)
+            {
+                for (int gameCol = 0; gameCol < Game.UsableScoreBoxesPerItem; gameCol++)
+                {
+                    int bestScore = -1;
+                    int bestScoreRow = -1;
+                    int bestScoreCol = -1;
+                    DiceVec = new int[Game.Dice];
+                    DiceRoll = new RollState[Game.Dice];
+                    int roll;
+                    for (roll = 1; roll <= 3; roll++)
+                    {
+                        bool rolling = false;
+                        for (int i = 0; i < Game.Dice; i++)
+                            if (DiceRoll[i] != RollState.HoldMe)
+                            {
+                                int die = DiceVec[i] = DiceGen.Next(1, 7);
+                                if (die == 6)
+                                {
+                                    DiceRoll[i] = RollState.HoldMe;
+                                }
+                                else
+                                {
+                                    DiceRoll[i] = RollState.RollMe;
+                                    rolling = true;
+                                }
+                            }
+                        if (!rolling) break;
+                    }
+                    for (int row = 0; row < Game.UsableItems; row++)
+                    {
+                        for (int col = 0; col < Game.UsableScoreBoxesPerItem; col++)
+                        {
+                            if (UsedScores[row, col]) continue;
+                            int diceValue = Game.ValueIt(DiceVec, row, col);
+                            if (diceValue > bestScore)
+                            {
+                                bestScore = diceValue;
+                                bestScoreRow = row;
+                                bestScoreCol = col;
+                            }
+                        }
+                    }
+                    string itemStr = string.Format("{0}{1}.{2}", "Rubrik", bestScoreRow, bestScoreCol);
+                    scorePanel.ScoreIt(itemStr, DiceVec, roll);
+                    UsedScores[bestScoreRow, bestScoreCol] = true;
+                    Thread.Sleep(5);
+                }
+            }
         }
 
         public void MyHelp(Control parent/*, 
@@ -758,7 +789,7 @@ namespace Yatzy
                     {
                         MessageBox.Show(
                             "Sorry, Can't find the requested help file at\n" + b,
-                            "Help on " + Game.toString(),
+                            "Help on " + Game,
                             MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                     break;
@@ -781,10 +812,10 @@ namespace Yatzy
 
         void OnPopupOptionsMenu2(object sender, EventArgs e)
         {
-            PlayYatzy.Checked = Game.toString() == "Yatzy";
-            PlayYahtzee.Checked = Game.toString() == "Yahtzee";
-            PlayMaxiyatzy.Checked = Game.toString() == "Maxiyatzy";
-            PlayBalut.Checked = Game.toString() == "Balut";
+            PlayYatzy.Checked = Game.ToString() == "Yatzy";
+            PlayYahtzee.Checked = Game.ToString() == "Yahtzee";
+            PlayMaxiyatzy.Checked = Game.ToString() == "Maxiyatzy";
+            PlayBalut.Checked = Game.ToString() == "Balut";
         }
 
         void OnPopupOptionsMenu3(object sender, EventArgs e)
@@ -892,15 +923,15 @@ namespace Yatzy
 
         void OnRules(object sender, EventArgs e)
         {
-            MyHelp(p);
+            MyHelp(ScoreCard);
         }
 
         void OnAbout(object sender, EventArgs e)
         {
             MessageBox.Show("PhDGames©\n" +
                             "Created by Peter Hegelund\n" +
-                            "Version 0.7.0.0, Nov 2014\n" +
-                            "Programmed in C#", "About " + Game.toString(),
+                            "Version 0.7.0.0, Feb 2015\n" +
+                            "Programmed in C#", "About " + Game,
                 MessageBoxButtons.OK, MessageBoxIcon.None);
         }
 
@@ -965,34 +996,32 @@ namespace Yatzy
 
         void DrawDie(Graphics g, int die, int val, Color DieCol)
         {
-            if (die < 0)
-                return;
-            if (die >= Game.Dice)
-                return;
-            Pen pen = new Pen(Color.Black);
-            GraphicsPath myGraphicsPath = new GraphicsPath();
-            DieSize = Math.Min(OptimalDieSize, ClientSize.Width * 9 / (10 * Game.Dice));
-            DieDist = DieSize / 10;
-            int CornerSize = DieDist * 7 / 6;
-            int Overshoot = DieDist + CornerSize;
-            int OvershootHalved = Overshoot / 2;
-            int OffsetX = die * (DieSize + DieDist);
-            SolidBrush DieBrush = new SolidBrush(DieCol);
+            Contract.Assert(die >= 0);
+            Contract.Assert(die < Game.Dice);
+            using (var DieBrush = new SolidBrush(DieCol))
+            using (var myGraphicsPath = new GraphicsPath())
+            {
+                DieSize = Math.Min(OptimalDieSize, ClientSize.Width * 9 / (10 * Game.Dice));
+                DieDist = DieSize / 10;
+                int CornerSize = DieDist * 7 / 6;
+                int Overshoot = DieDist + CornerSize;
+                int OvershootHalved = Overshoot / 2;
+                int OffsetX = die * (DieSize + DieDist);
 
-            Rectangle MyDie = new Rectangle(OffsetX, 10, DieSize, DieSize);
+                Rectangle MyDie = new Rectangle(OffsetX, 10, DieSize, DieSize);
 
-            //intersect the die with an ellipse to produce rounded corners
-            Rectangle CornerDie = new Rectangle(OffsetX - OvershootHalved, 10 - OvershootHalved,
-                DieSize + Overshoot, DieSize + Overshoot);
-            myGraphicsPath.AddEllipse(CornerDie);
-            Region MyRegion = new Region(myGraphicsPath);
-            MyRegion.Intersect(MyDie);
-            g.FillRegion(DieBrush, MyRegion);
+                //intersect the die with an ellipse to produce rounded corners
+                Rectangle CornerDie = new Rectangle(OffsetX - OvershootHalved, 10 - OvershootHalved,
+                    DieSize + Overshoot, DieSize + Overshoot);
+                myGraphicsPath.AddEllipse(CornerDie);
+                using (var MyRegion = new Region(myGraphicsPath))
+                {
+                    MyRegion.Intersect(MyDie);
+                    g.FillRegion(DieBrush, MyRegion);
 
-            OrnamentDie(g, MyDie, val);
-
-            pen.Dispose();
-            DieBrush.Dispose();
+                    OrnamentDie(g, MyDie, val);
+                }
+            }
 
         }
 
@@ -1188,78 +1217,6 @@ namespace Yatzy
 
         }
 
-    }
-
-    class PlayerNameDialog : Form
-    {
-        readonly TextBox NameBox;
-
-        public string UserName
-        {
-            get { return NameBox.Text; }
-            set { NameBox.Text = value; }
-        }
-
-        public PlayerNameDialog()
-        {
-            const int width = 300;
-            const int border = 10;
-            ClientSize = new Size(width, 100);
-            StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
-            Text = "Name";
-            ShowInTaskbar = false;
-
-            Label nameLabel = new Label
-            {
-                Location = new Point(border, 12),
-                Size = new Size(width/2, 24),
-                Text = "Enter your name:"
-            };
-
-            NameBox = new TextBox
-            {
-                Location = new Point(border, 76),
-                Size = new Size(width - 2*border, 48),
-                TabIndex = 1
-            };
-
-            const int button = 64;
-            Button okButton = new Button
-            {
-                Location = new Point(width - button - border, 12),
-                Size = new Size(button, border*2),
-                TabIndex = 2,
-                Text = "OK",
-                DialogResult = DialogResult.OK
-            };
-
-            Button notOkButton = new Button
-            {
-                Location = new Point(width - button - border, 44),
-                Size = new Size(button, border*2),
-                TabIndex = 3,
-                Text = "Cancel",
-                DialogResult = DialogResult.Cancel
-            };
-
-            AcceptButton = okButton;
-            CancelButton = notOkButton;
-
-            Controls.Add(nameLabel);
-            Controls.Add(NameBox);
-            Controls.Add(okButton);
-            Controls.Add(notOkButton);
-
-        }
-
-        public override sealed string Text
-        {
-            get { return base.Text; }
-            set { base.Text = value; }
-        }
     }
 
 }
