@@ -7,8 +7,9 @@ using System.Windows.Forms;
 
 namespace Yatzy
 {
-    public partial class ScorePanel : Form
+    public partial class ScorePanel : Panel
     {
+        public delegate void  CheckHiScore(GameOfDice game, string gamer, DateTime started);
         private const int OptimalDieSize = 66;
         private readonly GameOfDice Game;
         private readonly TextBox[,] Rubrik;
@@ -19,13 +20,21 @@ namespace Yatzy
         const int ScoreWidth = ItemWidth / 3;
         const int ItemTop = 0;
 
-        public ScorePanel(GameOfDice game, Button terningeKast)
+        private readonly string gamerName;
+        private readonly DateTime commenced;
+
+        private CheckHiScore checkHiScore;
+
+        public ScorePanel(GameOfDice game, string gamerName, Button terningeKast, CheckHiScore checkHiScore)
         {
             InitializeComponent();
 
             Game = game;
+            this.gamerName = gamerName;
+            this.commenced = DateTime.Now;
+            this.checkHiScore = checkHiScore;
 
-            Text = string.Format("{0} Computer Player Score Card", Game);
+            Text = string.Format("{0}'s {1} Score Card", gamerName, game);
             TerningeKast = terningeKast;
             Rubrik = new TextBox[Game.MaxTotalItem + 1, 6];
             var items = new TextBox[Game.MaxTotalItem + 1];
@@ -49,7 +58,7 @@ namespace Yatzy
                         else
                             items[i].Width = ItemWidth;
                         items[i].Text = Game.ItemText(i);
-                        ScoreCard.Controls.Add(items[i]);
+                        this.Controls.Add(items[i]);
                         items[i].Enabled = false;
                         items[i].BackColor = Color.Yellow;
                         items[i].BorderStyle = BorderStyle.Fixed3D;
@@ -60,7 +69,7 @@ namespace Yatzy
                             if (j >= Game.FirstScoreBox(i))
                             {
                                 Rubrik[i, j] = new myTextBox();
-                                ScoreCard.Controls.Add(Rubrik[i, j]);
+                                this.Controls.Add(Rubrik[i, j]);
                                 Rubrik[i, j].Name = "Rubrik" + i + "." + j;
                                 Rubrik[i, j].Enabled = false;
                                 Rubrik[i, j].Left = items[i].Left + ItemWidth + j * ScoreWidth;
@@ -75,9 +84,9 @@ namespace Yatzy
             int maxTop = items.Select(t => t.Top).Concat(new[] { 0 }).Max() + TextBoxHeight;
             const int borderThickness = 2;
             maxTop += borderThickness;
-            ClientSize = new Size(Game.MaxGroup * (ItemWidth * 3 / 2) + (Game.ScoreBoxesPerItem - 1) * ScoreWidth, maxTop);
+            Size = new Size(Game.MaxGroup * (ItemWidth * 3 / 2) + (Game.ScoreBoxesPerItem - 1) * ScoreWidth, maxTop);
 
-            Controls.Add(ScoreCard);
+            //Controls.Add(ScoreCard);
         }
 
         public override sealed string Text
@@ -138,6 +147,7 @@ namespace Yatzy
             {
                 TerningeKastText = "";
                 TerningeKast.Enabled = false;
+                checkHiScore(Game, gamerName, commenced);
             }
             TerningeKast.Text = TerningeKastText;
 

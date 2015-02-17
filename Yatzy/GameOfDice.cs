@@ -229,18 +229,7 @@ namespace Yatzy
             return "";
         }
 
-        //public virtual string ValueIt(int[] nw, int i, int j)
-        //{
-        //    int d = nw.Sum();
-        //    if (d < Dice)
-        //        throw new ArgumentException("Not a proper roll");
-
-        //    points(nw);
-
-        //    return "" + pts[i];
-        //}
-
-        public virtual int ValueIt(int[] nw, int i, int j)
+        public virtual int ValueIt(int[] nw, int i)
         {
             int d = nw.Sum();
             if (d < Dice)
@@ -1685,18 +1674,15 @@ namespace Yatzy
             return "";
         }
 
-        public override int ValueIt(int[] nw, int i, int j)
+        public override int ValueIt(int[] nw, int i)
         {
             foreach (int di in nw)
             { // check for die with six sides
                 if (di < 1)
-                    throw new ArgumentException("UNFL"); // can't be a proper roll af dice
+                    throw new ArgumentException("UNFL"); // can't be a proper roll of a die
                 if (di > 6)
-                    throw new ArgumentException("OVFL"); // can't be a proper roll af dice
+                    throw new ArgumentException("OVFL"); // can't be a proper roll of a die
             }
-
-            if (j >= UsableScoreBoxesPerItem)
-                throw new ArgumentException("NA"); // these columns are not of value ;-)
 
             points(nw);
 

@@ -69,8 +69,14 @@
     <Compile Include="Score.Designer.cs">
       <DependentUpon>Score.cs</DependentUpon>
     </Compile>
-    <Compile Include="ScorePanel.cs">
+    <Compile Include="ScoreForm.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ScoreForm.Designer.cs">
+      <DependentUpon>ScoreForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ScorePanel.cs">
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="ScorePanel.Designer.cs">
       <DependentUpon>ScorePanel.cs</DependentUpon>
@@ -103,8 +109,8 @@
     <EmbeddedResource Include="Score.resx">
       <DependentUpon>Score.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ScorePanel.resx">
-      <DependentUpon>ScorePanel.cs</DependentUpon>
+    <EmbeddedResource Include="ScoreForm.resx">
+      <DependentUpon>ScoreForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ScoreView.resx">
       <DependentUpon>ScoreView.cs</DependentUpon>
