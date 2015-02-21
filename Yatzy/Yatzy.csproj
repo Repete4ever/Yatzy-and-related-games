@@ -52,10 +52,23 @@
     <Compile Include="CalculateNodes.Designer.cs">
       <DependentUpon>CalculateNodes.cs</DependentUpon>
     </Compile>
+    <Compile Include="GameForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GameForm.Designer.cs">
+      <DependentUpon>GameForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="GameOfDice.cs" />
+    <Compile Include="GamePanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="GamePanel.Designer.cs">
+      <DependentUpon>GamePanel.cs</DependentUpon>
+    </Compile>
     <Compile Include="ImageView.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main.cs" />
     <Compile Include="PlayerName.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -68,12 +81,6 @@
     </Compile>
     <Compile Include="Score.Designer.cs">
       <DependentUpon>Score.cs</DependentUpon>
-    </Compile>
-    <Compile Include="ScoreForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="ScoreForm.Designer.cs">
-      <DependentUpon>ScoreForm.cs</DependentUpon>
     </Compile>
     <Compile Include="ScorePanel.cs">
       <SubType>Component</SubType>
@@ -89,6 +96,12 @@
     </Compile>
     <EmbeddedResource Include="CalculateNodes.resx">
       <DependentUpon>CalculateNodes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GameForm.resx">
+      <DependentUpon>GameForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GamePanel.resx">
+      <DependentUpon>GamePanel.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ImageView.resx">
       <DependentUpon>ImageView.cs</DependentUpon>
@@ -108,9 +121,6 @@
     </Compile>
     <EmbeddedResource Include="Score.resx">
       <DependentUpon>Score.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="ScoreForm.resx">
-      <DependentUpon>ScoreForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ScoreView.resx">
       <DependentUpon>ScoreView.cs</DependentUpon>

@@ -44,7 +44,8 @@ namespace Yatzy
 
         private void NameBox_TextChanged(object sender, EventArgs e)
         {
-            okButton.Enabled = !string.IsNullOrWhiteSpace(NameBox.Text);
+            string name = NameBox.Text.Trim();
+            okButton.Enabled = !string.IsNullOrEmpty(name) && name.ToUpper() != "HAL";
         }
     }
 }

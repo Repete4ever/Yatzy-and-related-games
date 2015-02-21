@@ -21,11 +21,18 @@ namespace Yatzy
         private readonly Random DiceGen = new Random();
         private readonly MenuItem English;
 
-        private readonly string[] klik =
+        public static readonly string[] klik =
         {
             "Klik på de terninger du vil slå om",
             "Klicka på de tärninger du vill slå om",
             "Select dice and reroll"
+        };
+
+        public static readonly string[] Result =
+        {
+            "Registrér resultatet i tabellen",
+            "Registrere resultatet i tabellen",
+            "Select a score box"
         };
 
         private readonly MenuItem PlayBalut;
@@ -34,49 +41,39 @@ namespace Yatzy
         private readonly MenuItem PlayYahtzee;
         private readonly MenuItem PlayYatzy;
 
-        private readonly string[] Result =
-        {
-            "Registrér resultatet i tabellen",
-            "Registrere resultatet i tabellen",
-            "Select a score box"
-        };
-
         private readonly TableLayoutPanel scorePanels = new TableLayoutPanel();
         private readonly Button StartAgain = new Button();
         private readonly string[] StartOver = {"Nyt spil", "Starta om", "New game"};
+
         private readonly MenuItem Swedish;
         private readonly Button TerningeKast = new Button();
         private readonly MenuItem TouchDice;
         private readonly MenuItem Undo;
         private readonly SolidBrush Whiteout = new SolidBrush(Color.White);
+
         // implement computer player
         // determine who goes first
         private static readonly Random whoIsOnFirst = new Random();
         private ScoreView _score;
         private int ChosenLanguage = CollectLanguage();
-        private Int32 DecidingCol;
-        private Int32 DecidingRow;
-        private RollState[] DiceRoll;
-        private int[] DiceVec;
+        //private RollState[] DiceRoll;
+        //private int[] DiceVec;
         private int DieDist;
         private int DieSize;
-        private DateTime gameCommenced;
         private GameOfDice HalGame;
         private GameOfDice HumanGame;
-        private TextBox[] Items;
-        private int[] OldDice;
-        private int OldRollCounter;
+        //private TextBox[] Items;
         private int RollCounter;
-        private int Rounds;
-        private TextBox[,] Rubrik;
+        //private TextBox[,] Rubrik;
         private int TargetDie = -1; // when selecting dice by merely moving the mouse
         private string TerningeKastText;
-        private bool Touchy = true;
         private bool Undoable;
-        private bool[,] UsedScores;
-        private bool _computerPlaysFirst = whoIsOnFirst.Next(0, 2) == 0;
+        //private bool[,] UsedScores;
+        private bool _computerPlaysFirst = whoIsOnFirst.Next(2) == 0;
+        private ScorePanel _humanPanel;
+        private ScorePanel _computerPanel;
 
-        private MyForm()
+        public MyForm()
         {
             //CollectLanguage();
 
@@ -413,169 +410,6 @@ namespace Yatzy
             }
         }
 
-        private void myMouseDecider(object sender)
-        {
-            const string R = "Rubrik";
-            var control = (Control) sender;
-            if (!control.Name.StartsWith(R))
-                return;
-            var S = control.Name;
-            var dot = S.IndexOf('.');
-            DecidingRow = Int32.Parse(S.Substring(R.Length, dot - R.Length));
-            DecidingCol = Int32.Parse(S.Substring(dot + 1));
-
-            Rubrik[DecidingRow, DecidingCol].Text = HumanGame.ScoreIt(DiceVec, DecidingRow, DecidingCol, RollCounter);
-            if (HumanGame.ScoreBoxesPerItem == 1)
-            {
-                for (var ro = HumanGame.MaxItem + 1; ro <= HumanGame.MaxTotalItem; ro++)
-                    Rubrik[ro, DecidingCol].Text = HumanGame.ScoreIt(DiceVec, ro, DecidingCol, RollCounter);
-            }
-            else
-            {
-                Rubrik[DecidingRow, 4].Text = HumanGame.ScoreIt(DiceVec, DecidingRow, 4, RollCounter);
-                Rubrik[DecidingRow, 5].Text = HumanGame.ScoreIt(DiceVec, DecidingRow, 5, RollCounter);
-                Rubrik[7, 5].Text = HumanGame.ScoreIt(DiceVec, 7, 5, RollCounter);
-                Rubrik[7, 4].Text = HumanGame.ScoreIt(DiceVec, 7, 4, RollCounter);
-                Rubrik[8, 5].Text = HumanGame.ScoreIt(DiceVec, 8, 5, RollCounter);
-            }
-            Rubrik[DecidingRow, DecidingCol].Enabled = false;
-            UsedScores[DecidingRow, DecidingCol] = true;
-            OldRollCounter = RollCounter;
-            RollCounter = 0;
-            Rounds++;
-            if (Rounds < HumanGame.MaxRound)
-            {
-                TerningeKastText =
-                    String.Format(HumanGame.RollText(RollCounter),
-                        HumanGame.Cardinal(RollCounter));
-                TerningeKast.Enabled = true;
-                TerningeKast.Focus();
-                Undoable = true;
-            }
-            else
-            {
-                TerningeKastText = "";
-                TerningeKast.Enabled = false;
-                CheckHiScore(HumanGame, Player, gameCommenced);
-            }
-            TerningeKast.Text = TerningeKastText;
-
-            var g = Graphics.FromHwnd(Handle);
-
-            for (var r = 0; r < HumanGame.Dice; r++)
-            {
-                DiceRoll[r] = RollState.Unborn;
-                OldDice[r] = DiceVec[r];
-                DiceVec[r] = 0;
-                DrawDie(g, r, 0, Color.Red);
-            }
-
-            for (var r = 0; r <= HumanGame.MaxItem; r++)
-                for (var d = HumanGame.FirstScoreBox(r); d < HumanGame.UsableScoreBoxesPerItem; d++)
-                {
-                    Rubrik[r, d].Enabled = false;
-                    if (!UsedScores[r, d])
-                        Rubrik[r, d].Text = "";
-                }
-            ShowSavedRolls(g);
-        }
-
-        private void UnDecider()
-        {
-            for (var d = 0; d < HumanGame.Dice; d++)
-                DiceVec[d] = OldDice[d]; // get that roll back
-
-            RollCounter = OldRollCounter;
-            Rubrik[DecidingRow, DecidingCol].Text = HumanGame.UnScoreIt(DiceVec, DecidingRow, DecidingCol, RollCounter);
-            if (HumanGame.ScoreBoxesPerItem == 1)
-            {
-                for (var ro = HumanGame.MaxItem + 1; ro <= HumanGame.MaxTotalItem; ro++)
-                    Rubrik[ro, DecidingCol].Text = HumanGame.UnScoreIt(DiceVec, ro, DecidingCol, RollCounter);
-            }
-            else
-            {
-                Rubrik[DecidingRow, 4].Text = HumanGame.UnScoreIt(DiceVec, DecidingRow, 4, RollCounter);
-                Rubrik[DecidingRow, 5].Text = HumanGame.UnScoreIt(DiceVec, DecidingRow, 5, RollCounter);
-                Rubrik[7, 5].Text = HumanGame.UnScoreIt(DiceVec, 7, 5, RollCounter);
-                Rubrik[7, 4].Text = HumanGame.UnScoreIt(DiceVec, 7, 4, RollCounter);
-                Rubrik[8, 5].Text = HumanGame.UnScoreIt(DiceVec, 8, 5, RollCounter);
-            }
-            Rubrik[DecidingRow, DecidingCol].Enabled = true;
-            UsedScores[DecidingRow, DecidingCol] = false;
-            Rounds--;
-            //		if(Rounds<HumanGame.MaxRound)
-            {
-                TerningeKastText = RollCounter == 3 && HumanGame.SavedRolls == 0
-                    ? Result[ChosenLanguage]
-                    : klik[ChosenLanguage];
-                TerningeKast.Enabled = false;
-            }
-            TerningeKast.Text = TerningeKastText;
-
-            using (var g = Graphics.FromHwnd(Handle))
-            {
-                for (var r = 0; r < HumanGame.Dice; r++)
-                {
-                    DiceRoll[r] = RollState.HoldMe;
-                    DrawDie(g, r, DiceVec[r], Color.Red);
-                }
-
-                for (var r = 0; r <= HumanGame.MaxItem; r++)
-                    for (var d = HumanGame.FirstScoreBox(r); d < HumanGame.UsableScoreBoxesPerItem; d++)
-                    {
-                        if (!UsedScores[r, d])
-                        {
-                            Rubrik[r, d].Enabled = true;
-                            Rubrik[r, d].Text = "";
-                        }
-                    }
-
-                ShowSavedRolls(g);
-            }
-        }
-
-        // Function signature must match the signature of the
-        // MouseEventHandler class.
-        private void myMouseDown(object sender, MouseEventArgs ex)
-        {
-            if (ex.Button == MouseButtons.Left)
-            {
-                myMouseDecider(sender);
-            }
-        }
-
-        // A method that shows your scoring if you choose to score it here
-        private void myMouseMove(object sender, MouseEventArgs ex)
-        {
-            var SenderName = ((Control) sender).Name;
-            var dot = SenderName.IndexOf('.');
-            var i = Int32.Parse(SenderName.Substring(6, dot - 6));
-            var j = Int32.Parse(SenderName.Substring(dot + 1));
-
-            Rubrik[i, j].Text = HumanGame.ValueIt(DiceVec, i).ToString();
-            Cursor.Current = Cursors.Arrow;
-        }
-
-        private void myMouseHover(object sender, EventArgs e)
-        {
-            if (Touchy)
-            {
-                myMouseDecider(sender);
-            }
-        }
-
-        // A method that deletes the potential score
-        private void myMouseLeave(object sender, EventArgs ex)
-        {
-            var dot = ((Control) sender).Name.IndexOf('.');
-            var i = Int32.Parse(((Control) sender).Name.Substring(6, dot - 6));
-            var j = Int32.Parse(((Control) sender).Name.Substring(dot + 1));
-
-            if (!UsedScores[i, j])
-                Rubrik[i, j].Text = "";
-            Cursor.Current = Cursors.Default;
-        }
-
         private void InitForm(string GameText)
         {
             HumanGame = null;
@@ -612,18 +446,15 @@ namespace Yatzy
             Name = HumanGame.ToString();
             Icon = Resources.Yatzy;
 
-            DiceVec = new int[HumanGame.Dice];
-            OldDice = new int[HumanGame.Dice];
-            DiceRoll = new RollState[HumanGame.Dice];
-            UsedScores = new bool[HumanGame.MaxItem + 1, HumanGame.ScoreBoxesPerItem];
+            //DiceVec = new int[HumanGame.Dice];
+            //OldDice = new int[HumanGame.Dice];
+            //DiceRoll = new RollState[HumanGame.Dice];
+            //UsedScores = new bool[HumanGame.MaxItem + 1, HumanGame.ScoreBoxesPerItem];
 
             TargetDie = -1;
 
-            // Set the form's size
-            ClientSize = new Size(HumanGame.Dice*OptimalDieSize*11/10, 360);
-
             RollCounter = 0;
-            Rounds = 0;
+            //Rounds = 0;
             TerningeKastText = String.Format(HumanGame.RollText(RollCounter), HumanGame.Cardinal(0));
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Enabled = true;
@@ -631,30 +462,8 @@ namespace Yatzy
 
             StartAgain.Text = StartOver[ChosenLanguage];
 
-            var g = Graphics.FromHwnd(Handle);
-
-            for (var i = 0; i < HumanGame.Dice; i++)
-            {
-                DiceRoll[i] = RollState.Unborn;
-                DiceVec[i] = 0;
-                DrawDie(g, i, 0, Color.Red);
-            }
-
-            for (var i = 0; i < UsedScores.GetLength(0); i++)
-                for (var j = 0; j < HumanGame.ScoreBoxesPerItem; j++)
-                    UsedScores[i, j] = false;
-
-            // Make the tables nice
-
-            scorePanels.Height = 550;
-            scorePanels.Top = ScoreCardStart;
-            scorePanels.Width = 450;
-            scorePanels.GrowStyle = TableLayoutPanelGrowStyle.AddColumns;
-
-            Rubrik = new TextBox[HumanGame.MaxTotalItem + 1, 6];
-            Items = new TextBox[HumanGame.MaxTotalItem + 1];
-
-            gameCommenced = DateTime.Now;
+            //Rubrik = new TextBox[HumanGame.MaxTotalItem + 1, 6];
+            //Items = new TextBox[HumanGame.MaxTotalItem + 1];
 
             scorePanels.Controls.Clear();
             Controls.Remove(scorePanels);
@@ -700,65 +509,102 @@ namespace Yatzy
             //        }
             //}
 
-            _computerPlaysFirst ^= true;
-            var computerPanel = new ScorePanel(HalGame, "HAL", TerningeKast, CheckHiScore);
-            var humanPanel = new ScorePanel(HumanGame, Player, TerningeKast, CheckHiScore);
-            scorePanels.Controls.Add(_computerPlaysFirst ? computerPanel : humanPanel);
-            scorePanels.Controls.Add(_computerPlaysFirst ? humanPanel : computerPanel);
-            for (var gameRow = 0; gameRow < HalGame.UsableItems; gameRow++)
+            _computerPlaysFirst = false; // ^= true;
+            ScorePanel.ChosenLanguage = ChosenLanguage;
+            _computerPanel = new ScorePanel(HalGame, "HAL", TerningeKast, CheckHiScore);
+            _humanPanel = new ScorePanel(HumanGame, Player, TerningeKast, CheckHiScore);
+
+            // Make the tables nice
+
+            scorePanels.Height = _humanPanel.Height;
+            scorePanels.Top = ScoreCardStart;
+            scorePanels.Width = _humanPanel.Width * 2;
+
+            // Set the form's size
+            ClientSize = new Size(Math.Max(HumanGame.Dice * OptimalDieSize * 11 / 10, scorePanels.Width), ScoreCardStart + _humanPanel.Height);
+
+            //scorePanels.Controls.Add(_computerPlaysFirst ? _computerPanel : _humanPanel, 0, 0);
+            //scorePanels.Controls.Add(_computerPlaysFirst ? _humanPanel : _computerPanel, 1, 0);
+            var newPanel = new GamePanel(HumanGame, Player, CheckHiScore) { DieColor = Color.Blue };
+            var newPanel2 = new GamePanel(HalGame, "HAL", CheckHiScore) { DieColor = Color.Red };
+            scorePanels.Controls.Add(newPanel, 0, 0);
+            scorePanels.Controls.Add(newPanel2, 1, 0);
+            scorePanels.Dock = DockStyle.Fill;
+            scorePanels.Height = newPanel.Height;
+            //scorePanels.Top = 0;
+            scorePanels.Width = newPanel.Width * 2;
+            ClientSize = scorePanels.Size;
+
+            Controls.Add(scorePanels);
+
+            using (var g = Graphics.FromHwnd(Handle))
             {
-                for (var gameCol = 0; gameCol < HalGame.UsableScoreBoxesPerItem; gameCol++)
+                for (var i = 0; i < HumanGame.Dice; i++)
                 {
-                    var bestScore = -1;
-                    var bestScoreRow = -1;
-                    var bestScoreCol = -1;
-                    DiceVec = new int[HalGame.Dice];
-                    DiceRoll = new RollState[HalGame.Dice];
-                    int roll;
-                    for (roll = 1; roll <= 3; roll++)
-                    {
-                        var rolling = false;
-                        for (var i = 0; i < HalGame.Dice; i++)
-                            if (DiceRoll[i] != RollState.HoldMe)
-                            {
-                                var die = DiceVec[i] = DiceGen.Next(1, 7);
-                                if (die == 6)
-                                {
-                                    DiceRoll[i] = RollState.HoldMe;
-                                }
-                                else
-                                {
-                                    DiceRoll[i] = RollState.RollMe;
-                                    rolling = true;
-                                }
-                            }
-                        if (!rolling)
-                        {
-                            break; // save a roll or two (only MaxiYatzy takes advantage though)
-                        }
-                    }
-                    for (var row = 0; row < HalGame.UsableItems; row++)
-                    {
-                        for (var col = 0; col < HalGame.UsableScoreBoxesPerItem; col++)
-                        {
-                            if (UsedScores[row, col]) continue;
-                            var diceValue = HalGame.ValueIt(DiceVec, row);
-                            if (diceValue > bestScore)
-                            {
-                                bestScore = diceValue;
-                                bestScoreRow = row;
-                                bestScoreCol = col;
-                            }
-                        }
-                    }
-                    var itemStr = string.Format("{0}{1}.{2}", "Rubrik", bestScoreRow, bestScoreCol);
-                    computerPanel.ScoreIt(itemStr, DiceVec, roll);
-                    UsedScores[bestScoreRow, bestScoreCol] = true;
-                    Thread.Sleep(5);
+                    _humanPanel.DiceRoll[i] = RollState.Unborn;
+                    _humanPanel.DiceVec[i] = 0;
+                    DrawDie(g, i, 0, Color.Red);
                 }
             }
-            Controls.Add(scorePanels);
+
+            for (var i = 0; i < _humanPanel.UsedScores.GetLength(0); i++)
+                for (var j = 0; j < HumanGame.ScoreBoxesPerItem; j++)
+                {
+                    _humanPanel.UsedScores[i, j] = false;
+                }
+
+            //HalfGame(newPanel);
         }
+
+        //private void HalfGame(GamePanel computerPanel)
+        //{
+        //    var bestScore = -1;
+        //    var bestScoreRow = -1;
+        //    var bestScoreCol = -1;
+        //    computerPanel.DiceVec = new int[HalGame.Dice];
+        //    computerPanel.DiceRoll = new GameForm.RollState[HalGame.Dice];
+        //    int roll;
+        //    for (roll = 1; roll <= 3; roll++)
+        //    {
+        //        var rolling = false;
+        //        for (var i = 0; i < HalGame.Dice; i++)
+        //            if (computerPanel.DiceRoll[i] != GameForm.RollState.HoldMe)
+        //            {
+        //                var die = computerPanel.DiceVec[i] = DiceGen.Next(1, 7);
+        //                if (die == 6)
+        //                {
+        //                    computerPanel.DiceRoll[i] = RollState.HoldMe;
+        //                }
+        //                else
+        //                {
+        //                    computerPanel.DiceRoll[i] = RollState.RollMe;
+        //                    rolling = true;
+        //                }
+        //            }
+        //        if (!rolling)
+        //        {
+        //            break; // save a roll or two (only MaxiYatzy takes advantage though)
+        //        }
+        //    }
+        //    for (var row = 0; row < HalGame.UsableItems; row++)
+        //    {
+        //        for (var col = 0; col < HalGame.UsableScoreBoxesPerItem; col++)
+        //        {
+        //            if (computerPanel.UsedScores[row, col]) continue;
+        //            var diceValue = HalGame.ValueIt(computerPanel.DiceVec, row);
+        //            if (diceValue > bestScore)
+        //            {
+        //                bestScore = diceValue;
+        //                bestScoreRow = row;
+        //                bestScoreCol = col;
+        //            }
+        //        }
+        //    }
+        //    var itemStr = string.Format("{0}{1}.{2}", "Rubrik", bestScoreRow, bestScoreCol);
+        //    computerPanel.ScoreIt(itemStr);
+        //    computerPanel.UsedScores[bestScoreRow, bestScoreCol] = true;
+        //    Thread.Sleep(5);
+        //}
 
         public void MyHelp(Control parent /*, myHelpEnum topic*/)
         {
@@ -807,8 +653,8 @@ namespace Yatzy
             Danish.Checked = ChosenLanguage == (int) GameOfDice.Language.Danish;
             Swedish.Checked = ChosenLanguage == (int) GameOfDice.Language.Swedish;
             English.Checked = ChosenLanguage == (int) GameOfDice.Language.English;
-            TouchDice.Checked = Touchy;
-            ClickDice.Checked = !Touchy;
+            TouchDice.Checked = ScorePanel.Touchy;
+            ClickDice.Checked = !ScorePanel.Touchy;
             Undo.Enabled = Undoable;
         }
 
@@ -829,7 +675,10 @@ namespace Yatzy
             ChosenLanguage = (int) GameOfDice.Language.Danish;
             HumanGame.ChosenLanguage = ChosenLanguage;
             for (var i = 0; i <= HumanGame.MaxTotalItem; i++)
-                Items[i].Text = HumanGame.ItemText(i);
+            {
+                _humanPanel.Items[i].Text = HumanGame.ItemText(i);
+                _computerPanel.Items[i].Text = HumanGame.ItemText(i);
+            }
             Invalidate();
         }
 
@@ -838,7 +687,10 @@ namespace Yatzy
             ChosenLanguage = (int) GameOfDice.Language.Swedish;
             HumanGame.ChosenLanguage = ChosenLanguage;
             for (var i = 0; i <= HumanGame.MaxTotalItem; i++)
-                Items[i].Text = HumanGame.ItemText(i);
+            {
+                _humanPanel.Items[i].Text = HumanGame.ItemText(i);
+                _computerPanel.Items[i].Text = HumanGame.ItemText(i);
+            }
             Invalidate();
         }
 
@@ -847,7 +699,10 @@ namespace Yatzy
             ChosenLanguage = (int) GameOfDice.Language.English;
             HumanGame.ChosenLanguage = ChosenLanguage;
             for (var i = 0; i <= HumanGame.MaxTotalItem; i++)
-                Items[i].Text = HumanGame.ItemText(i);
+            {
+                _humanPanel.Items[i].Text = HumanGame.ItemText(i);
+                _computerPanel.Items[i].Text = HumanGame.ItemText(i);
+            }
             Invalidate();
         }
 
@@ -899,7 +754,7 @@ namespace Yatzy
         {
             //		if(Undoable) 
             {
-                UnDecider();
+                _humanPanel.UnDecider();
             }
             Undoable = false;
         }
@@ -908,14 +763,14 @@ namespace Yatzy
         {
             TouchDice.Checked = true;
             ClickDice.Checked = false;
-            Touchy = true;
+            ScorePanel.Touchy = true;
         }
 
         private void OnClick(object sender, EventArgs e)
         {
             TouchDice.Checked = false;
             ClickDice.Checked = true;
-            Touchy = false;
+            ScorePanel.Touchy = false;
         }
 
         private void OnHiScore(object sender, EventArgs e)
@@ -1026,31 +881,33 @@ namespace Yatzy
             }
         }
 
-        // OnPaint handler
+        /// <summary>
+        ///  OnPaint handler
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
-            for (var i = 0; i < HumanGame.Dice; i++)
-            {
-                DrawDie(e.Graphics, i, DiceVec[i],
-                    DiceRoll[i] == RollState.RollMe ? Color.Black : Color.Red);
-            }
+            //for (var i = 0; i < HumanGame.Dice; i++)
+            //{
+            //    DrawDie(e.Graphics, i, _humanPanel.DiceVec[i],
+            //        _humanPanel.DiceRoll[i] == RollState.RollMe ? Color.Black : Color.Red);
+            //}
 
-            ShowSavedRolls(e.Graphics);
+            //ShowSavedRolls(e.Graphics);
 
-            TerningeKastText = String.Format(HumanGame.RollText(RollCounter), HumanGame.Cardinal(0));
-            TerningeKast.Text = TerningeKastText;
-            TerningeKast.Location = new Point(0, DieSize + 5*DieDist);
-            TerningeKast.Size = new Size(DieSize*HumanGame.Dice + DieDist*(HumanGame.Dice - 1), 24);
+            //TerningeKastText = String.Format(HumanGame.RollText(RollCounter), HumanGame.Cardinal(0));
+            //TerningeKast.Text = TerningeKastText;
+            //TerningeKast.Location = new Point(0, DieSize + 5*DieDist);
+            //TerningeKast.Size = new Size(DieSize*HumanGame.Dice + DieDist*(HumanGame.Dice - 1), 24);
 
-            StartAgain.Text = StartOver[ChosenLanguage];
-            StartAgain.Location = new Point(0, DieSize + 5*DieDist + 27);
-            StartAgain.Size = new Size(DieSize*HumanGame.Dice + DieDist*(HumanGame.Dice - 1), 24);
+            //StartAgain.Text = StartOver[ChosenLanguage];
+            //StartAgain.Location = new Point(0, DieSize + 5*DieDist + 27);
+            //StartAgain.Size = new Size(DieSize*HumanGame.Dice + DieDist*(HumanGame.Dice - 1), 24);
         }
 
         private void OnButtonClicked(Object sender, EventArgs e)
         {
             Undoable = false;
-            var g = Graphics.FromHwnd(Handle);
             TerningeKastText = RollCounter == 2 && HumanGame.SavedRolls == 0
                 ? Result[ChosenLanguage]
                 : klik[ChosenLanguage];
@@ -1064,28 +921,30 @@ namespace Yatzy
             {
                 HumanGame.UseARoll();
             }
-            ShowSavedRolls(g);
+            using (var g = Graphics.FromHwnd(Handle))
+            {
+                ShowSavedRolls(g);
 
-            for (var i = 0; i < HumanGame.Dice; i++)
-                if (DiceRoll[i] != RollState.HoldMe)
-                {
-                    DiceRoll[i] = RollState.HoldMe;
-                    DiceVec[i] = DiceGen.Next(1, 7);
-                    DrawDie(g, i, DiceVec[i], Color.Red);
-                }
+                for (var i = 0; i < HumanGame.Dice; i++)
+                    if (_humanPanel.DiceRoll[i] != RollState.HoldMe)
+                    {
+                        _humanPanel.DiceRoll[i] = RollState.HoldMe;
+                        _humanPanel.DiceVec[i] = DiceGen.Next(1, 7);
+                        DrawDie(g, i, _humanPanel.DiceVec[i], Color.Red);
+                    }
 
-            for (var r = 0; r <= HumanGame.MaxItem; r++)
-                for (var j = HumanGame.FirstScoreBox(r); j < HumanGame.UsableScoreBoxesPerItem; j++)
-                {
-                    if (!UsedScores[r, j])
-                        Rubrik[r, j].Enabled = true;
-                }
+                for (var r = 0; r <= HumanGame.MaxItem; r++)
+                    for (var j = HumanGame.FirstScoreBox(r); j < HumanGame.UsableScoreBoxesPerItem; j++)
+                    {
+                        if (!_humanPanel.UsedScores[r, j])
+                            _humanPanel.Rubrik[r, j].Enabled = true;
+                    }
+            }
         }
 
         private void OnButtonClicked2(Object sender, EventArgs e)
         {
             Undoable = false;
-            var g = Graphics.FromHwnd(Handle);
 
             RollCounter = 0;
             TerningeKastText = String.Format(HumanGame.RollText(RollCounter), HumanGame.Cardinal(RollCounter));
@@ -1095,29 +954,33 @@ namespace Yatzy
 
             TargetDie = -1;
 
-            Rounds = 0;
+            //Rounds = 0;
             HumanGame.NewGame();
-            for (var i = 0; i < HumanGame.Dice; i++)
-            {
-                DiceRoll[i] = RollState.Unborn;
-                DiceVec[i] = 0;
-                DrawDie(g, i, 0, Color.Red);
-            }
 
-            ShowSavedRolls(g);
+            using (var g = Graphics.FromHwnd(Handle))
+            {
+                for (var i = 0; i < HumanGame.Dice; i++)
+                {
+                    _humanPanel.DiceRoll[i] = RollState.Unborn;
+                    _humanPanel.DiceVec[i] = 0;
+                    DrawDie(g, i, 0, Color.Red);
+                }
+                ShowSavedRolls(g);
+            }
 
             int r;
             for (r = 0; r <= HumanGame.MaxItem; r++)
                 for (var j = HumanGame.FirstScoreBox(r); j < HumanGame.ScoreBoxesPerItem; j++)
                 {
-                    UsedScores[r, j] = false;
-                    Rubrik[r, j].Enabled = false;
-                    Rubrik[r, j].Text = "";
+                    _humanPanel.UsedScores[r, j] = false;
+                    _humanPanel.Rubrik[r, j].Enabled = false;
+                    _humanPanel.Rubrik[r, j].Text = "";
                 }
+
             for (; r <= HumanGame.MaxTotalItem; r++)
             {
-                Rubrik[r, 0].Enabled = false;
-                Rubrik[r, 0].Text = "";
+                _humanPanel.Rubrik[r, 0].Enabled = false;
+                _humanPanel.Rubrik[r, 0].Text = "";
             }
         }
 
@@ -1128,8 +991,7 @@ namespace Yatzy
 
             if (e.Y > DieSize)
                 return;
-            var g = Graphics.FromHwnd(Handle);
-            var DieClicked = e.X/(DieSize + DieDist);
+            var DieClicked = e.X / (DieSize + DieDist);
 
             if (DieClicked >= HumanGame.Dice)
                 return;
@@ -1142,34 +1004,35 @@ namespace Yatzy
 
             var SameDie = SaveTargetDie == DieClicked;
             TargetDie = DieClicked;
-            if (Touchy && SameDie)
+            if (ScorePanel.Touchy && SameDie)
                 return;
-            var ThisDieMustRoll = DiceRoll[DieClicked] == RollState.RollMe;
+            var ThisDieMustRoll = _humanPanel.DiceRoll[DieClicked] == RollState.RollMe;
 
-            DiceRoll[DieClicked] = ThisDieMustRoll ? RollState.HoldMe : RollState.RollMe;
+            _humanPanel.DiceRoll[DieClicked] = ThisDieMustRoll ? RollState.HoldMe : RollState.RollMe;
 
-            DrawDie(g, DieClicked, DiceVec[DieClicked],
-                ThisDieMustRoll ? Color.Red : Color.Black);
+            using (var g = Graphics.FromHwnd(Handle))
+            {
+                DrawDie(g, DieClicked, _humanPanel.DiceVec[DieClicked],
+                    ThisDieMustRoll ? Color.Red : Color.Black);
 
-            ShowSavedRolls(g);
+                ShowSavedRolls(g);
+            }
 
             TerningeKastText = String.Format(HumanGame.RollText(RollCounter), HumanGame.Cardinal(RollCounter));
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Enabled = true;
             TerningeKast.Focus();
-
-            g.Dispose();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            if (!Touchy)
+            if (!ScorePanel.Touchy)
                 TouchOrClick(e);
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            if (Touchy)
+            if (ScorePanel.Touchy)
                 TouchOrClick(e);
         }
 
@@ -1178,12 +1041,7 @@ namespace Yatzy
             TargetDie = -1;
         }
 
-        private static void Main()
-        {
-            Application.Run(new MyForm());
-        }
-
-        private enum RollState
+        public enum RollState
         {
             Unborn,
             RollMe,
@@ -1191,20 +1049,4 @@ namespace Yatzy
         };
     }
 
-    internal class myTextBox : TextBox
-    {
-        public myTextBox()
-        {
-            SetStyle(ControlStyles.UserPaint, true);
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var drawBrush = new SolidBrush(ForeColor); //Use the ForeColor property 
-
-            // Draw string to screen. 
-
-            e.Graphics.DrawString(Text, Font, drawBrush, 0f, 0f); //Use the Font property 
-        }
-    }
 }

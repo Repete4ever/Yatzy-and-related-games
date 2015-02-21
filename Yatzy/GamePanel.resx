@@ -117,22 +117,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-    <value>
-        AAABAAEAICAQAAAAAADoAgAAFgAAACgAAAAgAAAAQAAAAAEABAAAAAAAAAIAAAAAAAAAAAAAEAAAABAA
-        AAAAAAAAAACAAACAAAAAgIAAgAAAAIAAgACAgAAAwMDAAICAgAAAAP8AAP8AAAD//wD/AAAA/wD/AP//
-        AAD///8AsAAAAAAAAAAAAAAAAAAACwAAAAAAAAAAAAAAAAAAAAAA//////////////////8AAP//////
-        ////////////AAD//////////////////wAA//8AD/////////AA//8AAP/wAAD///////8AAA//AAD/
-        8AAA////////AAAP/wAA//AAAP///////wAAD/8AAP//AA/////////wAP//AAD/////////////////
-        /wAA//////////////////8AAP//////////////////AAD//////////////////wAA////////AA//
-        //////8AAP//////8AAA////////AAD///////AAAP///////wAA///////wAAD///////8AAP//////
-        /wAP////////AAD//////////////////wAA//////////////////8AAP//////////////////AAD/
-        /wAP////////8AD//wAA//AAAP///////wAAD/8AAP/wAAD///////8AAA//AAD/8AAA////////AAAP
-        /wAA//8AD/////////AA//8AAP//////////////////AAD//////////////////wAA////////////
-        //////8AAAAAAAAAAAAAAAAAAAAAALAAAAAAAAAAAAAAAAAAAAsAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
-</value>
-  </data>
+  <metadata name="TerningeKast.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 56</value>
+  </metadata>
+  <metadata name="StartAgain.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>112, 17</value>
+  </metadata>
+  <metadata name="$this.TrayLargeIcon" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
 </root>
