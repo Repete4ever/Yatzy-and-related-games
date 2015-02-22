@@ -241,13 +241,8 @@ namespace Yatzy
         }
 
         public enum Language { Danish, Swedish, English };
-        protected int myLanguage = (int)Language.Danish;
 
-        public int ChosenLanguage
-        {
-            get { return myLanguage; }
-            set { myLanguage = value; }
-        }
+        public static int ChosenLanguage { get; set; }
 
         public virtual void NewGame()
         {
@@ -265,7 +260,7 @@ namespace Yatzy
         public string Cardinal(int roll)
         {
             if (roll < 3)
-                return Cardinals[roll, myLanguage];
+                return Cardinals[roll, ChosenLanguage];
             return ""; // In Maxiyatzy you may have extra rolls but we don't supply the cardinal
         }
 
@@ -277,12 +272,17 @@ namespace Yatzy
 								"Roll the dice - {0} roll"
 							 };
 
+        protected GameOfDice()
+        {
+            ChosenLanguage = (int)Language.Danish;
+        }
+
         public string RollText(int roll)
         {
             if (roll < 3)
-                return RollTexts[myLanguage];
+                return RollTexts[ChosenLanguage];
             char[] splitter = { '-' };
-            return RollTexts[myLanguage].Split(splitter)[0];
+            return RollTexts[ChosenLanguage].Split(splitter)[0];
         }
     }
 
@@ -818,7 +818,7 @@ namespace Yatzy
 
         public override string ItemText(int item)
         {
-            return Items[item, myLanguage];
+            return Items[item, ChosenLanguage];
         }
 
         public override int MaxGroup
@@ -972,7 +972,7 @@ namespace Yatzy
 
         public override string ItemText(int item)
         {
-            return Items[item, myLanguage];
+            return Items[item, ChosenLanguage];
         }
 
         public override int SavedRolls
@@ -1114,7 +1114,7 @@ namespace Yatzy
 
         public override string ItemText(int item)
         {
-            return Items[item, myLanguage];
+            return Items[item, ChosenLanguage];
         }
 
         public override int MaxGroup
@@ -1421,7 +1421,7 @@ namespace Yatzy
 
         public override string ItemText(int item)
         {
-            return Items[item, myLanguage];
+            return Items[item, ChosenLanguage];
         }
 
         enum balut { firere, femmere, seksere, straight, hus, chance, balut_, total };

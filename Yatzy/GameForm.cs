@@ -245,27 +245,12 @@ namespace Yatzy
             // Set the form's title
             Text = HumanGame + " on a date with C#";
             //Name = HumanGame.ToString();
-            //Icon = Resources.Yatzy;
-
-            //DiceVec = new int[HumanGame.Dice];
-            //OldDice = new int[HumanGame.Dice];
-            //DiceRoll = new RollState[HumanGame.Dice];
-            //UsedScores = new bool[HumanGame.MaxItem + 1, HumanGame.ScoreBoxesPerItem];
-
-            //Rounds = 0;
-            
-            //Rubrik = new TextBox[HumanGame.MaxTotalItem + 1, 6];
-            //Items = new TextBox[HumanGame.MaxTotalItem + 1];
 
             scorePanels.Controls.Clear();
             Controls.Remove(scorePanels);
 
             
-            bool _computerPlaysFirst = false; // ^= true;
-            //_computerPanel = new ScorePanel(HalGame, "HAL", TerningeKast, CheckHiScore);
-            //_humanPanel = new ScorePanel(HumanGame, Player, TerningeKast, CheckHiScore);
-
-            // Make the tables nice
+            _computerPlaysFirst ^= true;
 
             //scorePanels.Height = _humanPanel.Height;
             //scorePanels.Top = ScoreCardStart;
@@ -274,21 +259,40 @@ namespace Yatzy
             // Set the form's size
             //ClientSize = new Size(Math.Max(HumanGame.Dice * OptimalDieSize * 11 / 10, scorePanels.Width), ScoreCardStart + _humanPanel.Height);
 
-            //scorePanels.Controls.Add(_computerPlaysFirst ? _computerPanel : _humanPanel, 0, 0);
-            //scorePanels.Controls.Add(_computerPlaysFirst ? _humanPanel : _computerPanel, 1, 0);
-            GamePanel.ChosenLanguage = ChosenLanguage;
-            var newPanel = new GamePanel(HumanGame, Player, CheckHiScore) { DieColor = Color.Blue, };
-            var newPanel2 = new GamePanel(HalGame, "HAL", CheckHiScore) { DieColor = Color.Red };
-            scorePanels.Controls.Add(newPanel, 0, 0);
-            scorePanels.Controls.Add(newPanel2, 1, 0);
-            scorePanels.Height = newPanel.Height;
-            //scorePanels.Top = 0;
-            scorePanels.Width = newPanel.Width * 2;
-            ClientSize = scorePanels.Size;
+            GameOfDice.ChosenLanguage = ChosenLanguage;
+            var computerPanel = new GamePanel(HalGame, "HAL", CheckHiScore) { DieColor = Color.Blue, };
+            var humanPanel = new GamePanel(HumanGame, Player, CheckHiScore) { DieColor = Color.Red };
+            scorePanels.Controls.Add(_computerPlaysFirst ? computerPanel : humanPanel, 0, 0);
+            scorePanels.Controls.Add(_computerPlaysFirst ? humanPanel : computerPanel, 1, 0);
+
+            ClientSize = new Size(computerPanel.Width * 2, computerPanel.Height);
 
             Controls.Add(scorePanels);
 
-            HalfGame(newPanel);
+            for (var row = 0; row < HalGame.UsableItems; row++)
+            {
+                for (var col = 0; col < HalGame.UsableScoreBoxesPerItem; col++)
+                {
+                    if (_computerPlaysFirst)
+                    {
+                        AutoGame(computerPanel, HalGame);
+                        AutoGame(humanPanel, HumanGame);
+                    }
+                    else
+                    {
+                        AutoGame(humanPanel, HumanGame);
+                        AutoGame(computerPanel, HalGame);
+                    }
+                }
+            }
+
+            int diffPoints = HalGame.GamePoints - HumanGame.GamePoints;
+            if (diffPoints > 0)
+                MessageBox.Show(string.Format("{0} scored {1} and won by {2}", computerPanel.gamerName, HalGame.GamePoints, diffPoints));
+            if (diffPoints== 0)
+                MessageBox.Show(string.Format("{0} scored {1} and made a draw", computerPanel.gamerName, HalGame.GamePoints));
+            if (diffPoints < 0)
+                MessageBox.Show(string.Format("{0} scored {1} and lost by {2}", computerPanel.gamerName, HalGame.GamePoints, -diffPoints));
         }
 
         public enum RollState
@@ -298,30 +302,31 @@ namespace Yatzy
             HoldMe
         };
 
-        readonly Random DiceGen = new Random();
+        private static readonly Random DiceGen = new Random();
+        private bool _computerPlaysFirst = DiceGen.Next(2) == 0;
 
-        private void HalfGame(GamePanel computerPanel)
+        private void AutoGame(GamePanel panel, GameOfDice game)
         {
             var bestScore = -1;
             var bestScoreRow = -1;
             var bestScoreCol = -1;
-            computerPanel.DiceVec = new int[HalGame.Dice];
-            computerPanel.DiceRoll = new RollState[HalGame.Dice];
+            panel.DiceVec = new int[game.Dice];
+            panel.DiceRoll = new RollState[game.Dice];
             int roll;
             for (roll = 1; roll <= 3; roll++)
             {
                 var rolling = false;
-                for (var i = 0; i < HalGame.Dice; i++)
-                    if (computerPanel.DiceRoll[i] != RollState.HoldMe)
+                for (var i = 0; i < game.Dice; i++)
+                    if (panel.DiceRoll[i] != RollState.HoldMe)
                     {
-                        var die = computerPanel.DiceVec[i] = DiceGen.Next(1, 7);
+                        var die = panel.DiceVec[i] = DiceGen.Next(1, 7);
                         if (die == 6)
                         {
-                            computerPanel.DiceRoll[i] = RollState.HoldMe;
+                            panel.DiceRoll[i] = RollState.HoldMe;
                         }
                         else
                         {
-                            computerPanel.DiceRoll[i] = RollState.RollMe;
+                            panel.DiceRoll[i] = RollState.RollMe;
                             rolling = true;
                         }
                     }
@@ -330,12 +335,12 @@ namespace Yatzy
                     break; // save a roll or two (only MaxiYatzy takes advantage though)
                 }
             }
-            for (var row = 0; row < HalGame.UsableItems; row++)
+            for (var row = 0; row < game.UsableItems; row++)
             {
-                for (var col = 0; col < HalGame.UsableScoreBoxesPerItem; col++)
+                for (var col = 0; col < game.UsableScoreBoxesPerItem; col++)
                 {
-                    if (computerPanel.UsedScores[row, col]) continue;
-                    var diceValue = HalGame.ValueIt(computerPanel.DiceVec, row);
+                    if (panel.UsedScores[row, col]) continue;
+                    var diceValue = game.ValueIt(panel.DiceVec, row);
                     if (diceValue > bestScore)
                     {
                         bestScore = diceValue;
@@ -345,8 +350,8 @@ namespace Yatzy
                 }
             }
             var itemStr = string.Format("{0}{1}.{2}", "Rubrik", bestScoreRow, bestScoreCol);
-            computerPanel.ScoreIt(itemStr);
-            computerPanel.UsedScores[bestScoreRow, bestScoreCol] = true;
+            panel.ScoreIt(itemStr, roll);
+            panel.UsedScores[bestScoreRow, bestScoreCol] = true;
             Thread.Sleep(5);
         }
 
@@ -384,11 +389,6 @@ namespace Yatzy
             if (GameKey != null) GameKey.SetValue("Game Name", name);
         }
 
-        //private static string myDateTime(DateTime myDateTime)
-        //{
-        //    return string.Format("{0} {1}", myDateTime.ToShortDateString(), myDateTime.ToShortTimeString());
-        //}
-
         private static ushort ToUShort(long val)
         {
             return val <= 65535 && val >= 0 ? (ushort) val : (ushort) 0;
@@ -416,22 +416,31 @@ namespace Yatzy
         private void OnLanguage1(object sender, EventArgs e)
         {
             ChosenLanguage = (int)GameOfDice.Language.Danish;
-            GamePanel.ChosenLanguage = ChosenLanguage;
-            Invalidate();
+            GameOfDice.ChosenLanguage = ChosenLanguage;
+            foreach (GamePanel panel in scorePanels.Controls)
+            {
+                panel.RefreshItemTexts();
+            }
         }
 
         private void OnLanguage2(object sender, EventArgs e)
         {
             ChosenLanguage = (int)GameOfDice.Language.Swedish;
-            GamePanel.ChosenLanguage = ChosenLanguage;
-            Invalidate();
+            GameOfDice.ChosenLanguage = ChosenLanguage;
+            foreach (GamePanel panel in scorePanels.Controls)
+            {
+                panel.RefreshItemTexts();
+            }
         }
 
         private void OnLanguage3(object sender, EventArgs e)
         {
             ChosenLanguage = (int)GameOfDice.Language.English;
-            GamePanel.ChosenLanguage = ChosenLanguage;
-            Invalidate();
+            GameOfDice.ChosenLanguage = ChosenLanguage;
+            foreach (GamePanel panel in scorePanels.Controls)
+            {
+                panel.RefreshItemTexts();
+            }
         }
 
         private void OnUndo(object sender, EventArgs e)

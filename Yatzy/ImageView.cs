@@ -673,37 +673,16 @@ namespace Yatzy
         private void OnLanguage1(object sender, EventArgs e)
         {
             ChosenLanguage = (int) GameOfDice.Language.Danish;
-            HumanGame.ChosenLanguage = ChosenLanguage;
-            for (var i = 0; i <= HumanGame.MaxTotalItem; i++)
-            {
-                _humanPanel.Items[i].Text = HumanGame.ItemText(i);
-                _computerPanel.Items[i].Text = HumanGame.ItemText(i);
-            }
-            Invalidate();
         }
 
         private void OnLanguage2(object sender, EventArgs e)
         {
             ChosenLanguage = (int) GameOfDice.Language.Swedish;
-            HumanGame.ChosenLanguage = ChosenLanguage;
-            for (var i = 0; i <= HumanGame.MaxTotalItem; i++)
-            {
-                _humanPanel.Items[i].Text = HumanGame.ItemText(i);
-                _computerPanel.Items[i].Text = HumanGame.ItemText(i);
-            }
-            Invalidate();
         }
 
         private void OnLanguage3(object sender, EventArgs e)
         {
             ChosenLanguage = (int) GameOfDice.Language.English;
-            HumanGame.ChosenLanguage = ChosenLanguage;
-            for (var i = 0; i <= HumanGame.MaxTotalItem; i++)
-            {
-                _humanPanel.Items[i].Text = HumanGame.ItemText(i);
-                _computerPanel.Items[i].Text = HumanGame.ItemText(i);
-            }
-            Invalidate();
         }
 
         private void OnGame1(object sender, EventArgs e)

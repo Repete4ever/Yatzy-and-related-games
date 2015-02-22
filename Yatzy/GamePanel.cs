@@ -14,7 +14,7 @@ namespace Yatzy
         private const int OptimalDieSize = 66;
         private readonly GameOfDice game;
 
-        // Controls and texts embedded in this Panel
+        // The two buttons are on the Design page
 
         private readonly string[] StartOver = { "Nyt spil", "Starta om", "New game" };
         public static readonly string[] klik =
@@ -40,7 +40,7 @@ namespace Yatzy
         private const int ScoreWidth = ItemWidth / 3;
         private const int ItemTop = 200;
 
-        private readonly string gamerName;
+        public readonly string gamerName;
         private readonly DateTime commenced;
 
         private readonly CheckHiScore checkHiScore;
@@ -71,6 +71,21 @@ namespace Yatzy
         }
 
         public Color DieColor { get; set; }
+
+        /// <summary>
+        /// In case the language changes
+        /// </summary>
+        public void RefreshItemTexts()
+        {
+            StartAgain.Text = StartOver[GameOfDice.ChosenLanguage];
+
+            TerningeKastText = String.Format(game.RollText(RollCounter), game.Cardinal(0));
+            TerningeKast.Text = TerningeKastText; for (var i = 0; i < Items.Length; i++)
+
+            {
+                Items[i].Text = game.ItemText(i);
+            }
+        }
 
         private void DrawPanel()
         {
@@ -148,7 +163,7 @@ namespace Yatzy
             TerningeKast.Location = new Point(0, DieSize + 5 * DieDist);
             TerningeKast.Size = new Size(DieSize * game.Dice + DieDist * (game.Dice - 1), 24);
 
-            StartAgain.Text = StartOver[ChosenLanguage];
+            StartAgain.Text = StartOver[GameOfDice.ChosenLanguage];
             StartAgain.Location = new Point(0, DieSize + 5 * DieDist + 27);
             StartAgain.Size = new Size(DieSize * game.Dice + DieDist * (game.Dice - 1), 24);
         }
@@ -160,7 +175,8 @@ namespace Yatzy
         /// <summary>
         /// </summary>
         /// <param name="S"></param>
-        public void ScoreIt(string S)
+        /// <param name="roll"></param>
+        public void ScoreIt(string S, int roll)
         {
             const string R = "Rubrik";
             if (!S.StartsWith(R))
@@ -168,6 +184,7 @@ namespace Yatzy
             var dot = S.IndexOf('.');
             DecidingRow = int.Parse(S.Substring(R.Length, dot - R.Length));
             DecidingCol = int.Parse(S.Substring(dot + 1));
+            RollCounter = roll;
 
             Rubrik[DecidingRow, DecidingCol].Text = game.ScoreIt(DiceVec, DecidingRow, DecidingCol, RollCounter);
             if (game.ScoreBoxesPerItem == 1)
@@ -231,16 +248,19 @@ namespace Yatzy
         private int DieDist;
         public string TerningeKastText { get; set; }
 
-        public static int ChosenLanguage { get; set; }
-
         public static bool Touchy
         {
             get { return _touchy; }
             set { _touchy = value; }
         }
 
+        public string GamerName
+        {
+            get { return gamerName; }
+        }
+
         /// <summary>
-        ///     ornament an ordinary six-sided die
+        /// ornament an ordinary six-sided die
         /// </summary>
         /// <param name="g"></param>
         /// <param name="die"></param>
@@ -300,7 +320,6 @@ namespace Yatzy
             }
         }
 
-        private const int CompensateMenu = 25;
         private void DrawDie(Graphics g, int die, int val, Color DieCol)
         {
             Contract.Assert(die >= 0);
@@ -313,7 +332,7 @@ namespace Yatzy
             var OvershootHalved = Overshoot / 2;
             var OffsetX = die * (DieSize + DieDist);
 
-            var MyDie = new Rectangle(OffsetX, CompensateMenu, DieSize, DieSize);
+            var MyDie = new Rectangle(OffsetX, 10, DieSize, DieSize);
 
             //intersect the die with an ellipse to produce rounded corners
             var CornerDie = new Rectangle(OffsetX - OvershootHalved, 10 - OvershootHalved,
@@ -335,7 +354,7 @@ namespace Yatzy
 
         private void ShowSavedRolls(Graphics g)
         {
-            var Pins = new Rectangle(DieSize * game.Dice / 2 + 2 * DieDist - 7, DieSize + 2 * DieDist + CompensateMenu, 20, 10);
+            var Pins = new Rectangle(DieSize * game.Dice / 2 + 2 * DieDist - 7, DieSize + 2 * DieDist, 20, 10);
             var format = new StringFormat
             {
                 Alignment = StringAlignment.Center,
@@ -436,8 +455,8 @@ namespace Yatzy
         {
             Undoable = false;
             TerningeKastText = RollCounter == 2 && game.SavedRolls == 0
-                ? Result[ChosenLanguage]
-                : klik[ChosenLanguage];
+                ? Result[GameOfDice.ChosenLanguage]
+                : klik[GameOfDice.ChosenLanguage];
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Enabled = false;
 
@@ -553,13 +572,13 @@ namespace Yatzy
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            if (!ScorePanel.Touchy)
+            if (!Touchy)
                 TouchOrClick(e);
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            if (ScorePanel.Touchy)
+            if (Touchy)
                 TouchOrClick(e);
         }
 

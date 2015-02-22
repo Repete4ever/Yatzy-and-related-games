@@ -57,18 +57,18 @@
             // 
             // scorePanels
             // 
-            this.scorePanels.AutoSize = true;
-            this.scorePanels.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.scorePanels.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.scorePanels.ColumnCount = 2;
             this.scorePanels.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.scorePanels.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.scorePanels.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.scorePanels.Location = new System.Drawing.Point(0, 24);
+            this.scorePanels.Location = new System.Drawing.Point(0, 27);
             this.scorePanels.Name = "scorePanels";
             this.scorePanels.RowCount = 1;
             this.scorePanels.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.scorePanels.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.scorePanels.Size = new System.Drawing.Size(284, 237);
+            this.scorePanels.Size = new System.Drawing.Size(853, 425);
             this.scorePanels.TabIndex = 0;
             // 
             // menuStrip1
@@ -79,7 +79,7 @@
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(284, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(853, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -253,7 +253,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(853, 449);
             this.Controls.Add(this.scorePanels);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
