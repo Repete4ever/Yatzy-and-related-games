@@ -248,7 +248,6 @@ namespace Yatzy
 
             scorePanels.Controls.Clear();
             Controls.Remove(scorePanels);
-
             
             _computerPlaysFirst ^= true;
 
@@ -260,39 +259,33 @@ namespace Yatzy
             //ClientSize = new Size(Math.Max(HumanGame.Dice * OptimalDieSize * 11 / 10, scorePanels.Width), ScoreCardStart + _humanPanel.Height);
 
             GameOfDice.ChosenLanguage = ChosenLanguage;
-            var computerPanel = new GamePanel(HalGame, "HAL", CheckHiScore) { DieColor = Color.Blue, };
-            var humanPanel = new GamePanel(HumanGame, Player, CheckHiScore) { DieColor = Color.Red };
+            var computerPanel = new GamePanel(HalGame, "HAL", CheckHiScore, null, null) { DieColor = Color.Blue, };
+            var humanPanel = new GamePanel(HumanGame, Player, CheckHiScore, AutoGame, computerPanel) { DieColor = Color.Red };
             scorePanels.Controls.Add(_computerPlaysFirst ? computerPanel : humanPanel, 0, 0);
             scorePanels.Controls.Add(_computerPlaysFirst ? humanPanel : computerPanel, 1, 0);
 
-            ClientSize = new Size(computerPanel.Width * 2, computerPanel.Height);
-
             Controls.Add(scorePanels);
 
-            for (var row = 0; row < HalGame.UsableItems; row++)
+            if (_computerPlaysFirst)
             {
-                for (var col = 0; col < HalGame.UsableScoreBoxesPerItem; col++)
-                {
-                    if (_computerPlaysFirst)
-                    {
-                        AutoGame(computerPanel, HalGame);
-                        AutoGame(humanPanel, HumanGame);
-                    }
-                    else
-                    {
-                        AutoGame(humanPanel, HumanGame);
-                        AutoGame(computerPanel, HalGame);
-                    }
-                }
+                AutoGame(computerPanel);
+                ClientSize = new Size(computerPanel.Width * 2, computerPanel.Height);
+            }
+            else
+            {
+                ClientSize = new Size(humanPanel.Width * 2, humanPanel.Height);
             }
 
-            int diffPoints = HalGame.GamePoints - HumanGame.GamePoints;
-            if (diffPoints > 0)
-                MessageBox.Show(string.Format("{0} scored {1} and won by {2}", computerPanel.gamerName, HalGame.GamePoints, diffPoints));
-            if (diffPoints== 0)
-                MessageBox.Show(string.Format("{0} scored {1} and made a draw", computerPanel.gamerName, HalGame.GamePoints));
-            if (diffPoints < 0)
-                MessageBox.Show(string.Format("{0} scored {1} and lost by {2}", computerPanel.gamerName, HalGame.GamePoints, -diffPoints));
+            //for (var row = 0; row < HalGame.UsableItems; row++)
+            //{
+            //    for (var col = 0; col < HalGame.UsableScoreBoxesPerItem; col++)
+            //    {
+            //        foreach (GamePanel panel in scorePanels.Controls)
+            //        {
+            //            AutoGame(panel);
+            //        }
+            //    }
+            //}
         }
 
         public enum RollState
@@ -305,8 +298,9 @@ namespace Yatzy
         private static readonly Random DiceGen = new Random();
         private bool _computerPlaysFirst = DiceGen.Next(2) == 0;
 
-        private void AutoGame(GamePanel panel, GameOfDice game)
+        private void AutoGame(GamePanel panel)
         {
+            GameOfDice game = panel.Game;
             var bestScore = -1;
             var bestScoreRow = -1;
             var bestScoreCol = -1;
@@ -351,11 +345,15 @@ namespace Yatzy
             }
             var itemStr = string.Format("{0}{1}.{2}", "Rubrik", bestScoreRow, bestScoreCol);
             panel.ScoreIt(itemStr, roll);
-            panel.UsedScores[bestScoreRow, bestScoreCol] = true;
-            Thread.Sleep(5);
         }
 
 
+        /// <summary>
+        /// Pick up language from CurrentCulture. 
+        /// If not Swedish or Danish, US English is chosen.
+        /// You can dynamically switch between the three languages.
+        /// </summary>
+        /// <returns></returns>
         private static int CollectLanguage()
         {
             try
@@ -377,13 +375,13 @@ namespace Yatzy
             }
         }
 
-        private string CollectGameName()
+        private static string CollectGameName()
         {
             var GameKey = Registry.CurrentUser.CreateSubKey(RegFolder);
             return GameKey != null ? GameKey.GetValue("Game Name", "Yatzy").ToString() : "Yatzy";
         }
 
-        private void SaveGameName(string name)
+        private static void SaveGameName(string name)
         {
             var GameKey = Registry.CurrentUser.CreateSubKey(RegFolder);
             if (GameKey != null) GameKey.SetValue("Game Name", name);
@@ -445,7 +443,14 @@ namespace Yatzy
 
         private void OnUndo(object sender, EventArgs e)
         {
-
+            foreach (GamePanel panel in scorePanels.Controls)
+            {
+                if (panel.GamerName != "HAL")
+                {
+                    panel.UnDecider();
+                }
+            }
+            GamePanel.Undoable = false;
         }
 
         private void OnTouch(object sender, EventArgs e)

@@ -525,8 +525,8 @@ namespace Yatzy
 
             //scorePanels.Controls.Add(_computerPlaysFirst ? _computerPanel : _humanPanel, 0, 0);
             //scorePanels.Controls.Add(_computerPlaysFirst ? _humanPanel : _computerPanel, 1, 0);
-            var newPanel = new GamePanel(HumanGame, Player, CheckHiScore) { DieColor = Color.Blue };
-            var newPanel2 = new GamePanel(HalGame, "HAL", CheckHiScore) { DieColor = Color.Red };
+            var newPanel = new GamePanel(HumanGame, Player, CheckHiScore, null, null) { DieColor = Color.Blue };
+            var newPanel2 = new GamePanel(HalGame, "HAL", CheckHiScore, null, null) { DieColor = Color.Red };
             scorePanels.Controls.Add(newPanel, 0, 0);
             scorePanels.Controls.Add(newPanel2, 1, 0);
             scorePanels.Dock = DockStyle.Fill;

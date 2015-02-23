@@ -11,8 +11,10 @@ namespace Yatzy
     {
         public delegate void CheckHiScore(GameOfDice game, string gamer, DateTime started);
 
+        public delegate void AutoGame(GamePanel panel);
+
         private const int OptimalDieSize = 66;
-        private readonly GameOfDice game;
+        public GameOfDice Game { get; private set; }
 
         // The two buttons are on the Design page
 
@@ -37,8 +39,8 @@ namespace Yatzy
         public static bool Undoable { get; set; }
 
         private const int ItemWidth = 97;
-        private const int ScoreWidth = ItemWidth / 3;
-        private const int ItemTop = 200;
+        private const int ScoreSpacing = ItemWidth / 3;
+        private const int ItemTop = 160;
 
         public readonly string gamerName;
         private readonly DateTime commenced;
@@ -52,7 +54,10 @@ namespace Yatzy
 
         public int[] DiceVec;
 
-        public GamePanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore)
+        private readonly AutoGame _computerGame;
+        private readonly GamePanel _computerPanel;
+
+        public GamePanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore, AutoGame computerGame, GamePanel computerPanel)
         {
             ResizeRedraw = true; 
             
@@ -62,10 +67,13 @@ namespace Yatzy
             Controls.Add(StartAgain);
 
             DiceVec = new int[game.Dice];
-            this.game = game;
+            this.Game = game;
             this.gamerName = gamerName;
             commenced = DateTime.Now;
             this.checkHiScore = checkHiScore;
+
+            _computerGame = computerGame;
+            _computerPanel = computerPanel;
 
             DrawPanel();
         }
@@ -79,78 +87,120 @@ namespace Yatzy
         {
             StartAgain.Text = StartOver[GameOfDice.ChosenLanguage];
 
-            TerningeKastText = String.Format(game.RollText(RollCounter), game.Cardinal(0));
+            TerningeKastText = String.Format(Game.RollText(RollCounter), Game.Cardinal(0));
             TerningeKast.Text = TerningeKastText; for (var i = 0; i < Items.Length; i++)
 
             {
-                Items[i].Text = game.ItemText(i);
+                Items[i].Text = Game.ItemText(i);
             }
         }
 
         private void DrawPanel()
         {
-            Rubrik = new TextBox[game.MaxTotalItem + 1, 6];
-            Items = new TextBox[game.MaxTotalItem + 1];
-            UsedScores = new bool[game.MaxItem + 1, game.ScoreBoxesPerItem];
-            DiceRoll = new GameForm.RollState[game.Dice];
-            OldDice = new int[game.Dice];
+            Rubrik = new TextBox[Game.MaxTotalItem + 1, 6];
+            Items = new TextBox[Game.MaxTotalItem + 1];
+            UsedScores = new bool[Game.MaxItem + 1, Game.ScoreBoxesPerItem];
+            DiceRoll = new GameForm.RollState[Game.Dice];
+            OldDice = new int[Game.Dice];
 
             const int TextBoxHeight = 20;
 
-            for (var Col = 0; Col < game.MaxGroup; Col++)
+            for (var Col = 0; Col < Game.MaxGroup; Col++)
             {
                 for (var i = 0; i < Items.Length; i++)
-                    if (Col + 1 == game.PreferredGroup(i))
+                    if (Col + 1 == Game.PreferredGroup(i))
                     {
                         Items[i] = new myTextBox();
-                        if (game.FirstScoreBox(i) > 0)
+                        if (Game.FirstScoreBox(i) > 0)
                         {
                             Items[i].TextAlign = HorizontalAlignment.Right;
-                            Items[i].Width = ItemWidth + game.FirstScoreBox(i) * ScoreWidth;
+                            Items[i].Width = ItemWidth + Game.FirstScoreBox(i) * ScoreSpacing;
                         }
                         else
                             Items[i].Width = ItemWidth;
-                        Items[i].Text = game.ItemText(i);
+                        Items[i].Text = Game.ItemText(i);
                         Controls.Add(Items[i]);
                         Items[i].Enabled = false;
                         Items[i].BackColor = Color.Yellow;
                         Items[i].BorderStyle = BorderStyle.Fixed3D;
                         Items[i].Left = Col * ItemWidth * 3 / 2;
-                        Items[i].Top = ItemTop + TextBoxHeight * game.PreferredRow(i);
+                        Items[i].Top = ItemTop + TextBoxHeight * Game.PreferredRow(i);
 
-                        for (var j = 0; j < game.ScoreBoxesPerItem; j++)
-                            if (j >= game.FirstScoreBox(i))
+                        for (var j = 0; j < Game.ScoreBoxesPerItem; j++)
+                            if (j >= Game.FirstScoreBox(i))
                             {
                                 Rubrik[i, j] = new myTextBox();
                                 Controls.Add(Rubrik[i, j]);
                                 Rubrik[i, j].Name = "Rubrik" + i + "." + j;
                                 Rubrik[i, j].Enabled = false;
-                                Rubrik[i, j].Left = Items[i].Left + ItemWidth + j * ScoreWidth;
-                                Rubrik[i, j].Top = ItemTop + TextBoxHeight * game.PreferredRow(i);
-                                Rubrik[i, j].Width = ScoreWidth;
-                                Rubrik[i, j].BackColor = j >= game.UsableScoreBoxesPerItem
+                                Rubrik[i, j].Left = Items[i].Left + ItemWidth + j * ScoreSpacing;
+                                Rubrik[i, j].Top = ItemTop + TextBoxHeight * Game.PreferredRow(i);
+                                Rubrik[i, j].Width = ScoreSpacing;
+                                Rubrik[i, j].BackColor = j >= Game.UsableScoreBoxesPerItem
                                     ? Color.Coral
                                     : Color.AliceBlue;
                                 Rubrik[i, j].BorderStyle = BorderStyle.Fixed3D;
-                                //Rubrik[i, j].MouseDown += myMouseDown;
-                                //Rubrik[i, j].MouseHover += myMouseHover;
-                                //Rubrik[i, j].MouseMove += myMouseMove;
-                                //Rubrik[i, j].MouseLeave += myMouseLeave;
+                                Rubrik[i, j].MouseDown += myMouseDown;
+                                Rubrik[i, j].MouseHover += myMouseHover;
+                                Rubrik[i, j].MouseMove += myMouseMove;
+                                Rubrik[i, j].MouseLeave += myMouseLeave;
                             }
                     }
             }
 
             var maxTop = Items.Select(t => t.Top).Concat(new[] { 0 }).Max() + TextBoxHeight;
-            const int borderThickness = 4;
+            const int borderThickness = TextBoxHeight + 10;
             maxTop += borderThickness;
-            Size = new Size(Math.Max(game.MaxGroup * (ItemWidth * 3 / 2) + (game.ScoreBoxesPerItem - 1) * ScoreWidth,0), maxTop);
+            DieSize = Math.Min(OptimalDieSize, ClientSize.Width * 9 / (10 * Game.Dice));
+            DieDist = DieSize / 10; 
+            int diceWidth = (DieSize + DieDist) * Game.Dice;
+            int scoreWidth = Game.MaxGroup*(ItemWidth*3/2) + (Game.ScoreBoxesPerItem - 1)*ScoreSpacing;
+            Size = new Size(Math.Max(scoreWidth, diceWidth), maxTop);
             this.Paint += OnPaint;
             //this.Invalidate();
         }
 
+        private void myMouseLeave(object sender, EventArgs e)
+        {
+            Int32 dot = ((Control)sender).Name.IndexOf('.');
+            Int32 i = Int32.Parse(((Control)sender).Name.Substring(6, dot - 6));
+            Int32 j = Int32.Parse(((Control)sender).Name.Substring(dot + 1));
+
+            if (!UsedScores[i, j])
+                Rubrik[i, j].Text = "";
+            Cursor.Current = Cursors.Default;
+        }
+
+        private void myMouseMove(object sender, MouseEventArgs ex)
+        {
+            string SenderName = ((Control)sender).Name;
+            Int32 dot = SenderName.IndexOf('.');
+            Int32 i = Int32.Parse(SenderName.Substring(6, dot - 6));
+            Int32 j = Int32.Parse(SenderName.Substring(dot + 1));
+
+            Rubrik[i, j].Text = Game.ValueIt(DiceVec, i).ToString();
+            Cursor.Current = Cursors.Arrow;
+        }
+
+        private void myMouseHover(object sender, EventArgs ex)
+        {
+            if (Touchy)
+            {
+                myMouseDecider(sender);
+            }
+        }
+
+        private void myMouseDown(object sender, MouseEventArgs ex)
+        {
+            if (ex.Button == MouseButtons.Left)
+            {
+                myMouseDecider(sender);
+            }
+        }
+
         private void OnPaint(object sender, PaintEventArgs e)
         {
-            for (var i = 0; i < game.Dice; i++)
+            for (var i = 0; i < Game.Dice; i++)
             {
                 DrawDie(e.Graphics, i, DiceVec[i],
                     DiceRoll[i] == GameForm.RollState.RollMe ? Color.Black : DieColor);
@@ -158,19 +208,30 @@ namespace Yatzy
 
             ShowSavedRolls(e.Graphics);
 
-            TerningeKastText = String.Format(game.RollText(RollCounter), game.Cardinal(0));
+            TerningeKastText = String.Format(Game.RollText(RollCounter), Game.Cardinal(0));
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Location = new Point(0, DieSize + 5 * DieDist);
-            TerningeKast.Size = new Size(DieSize * game.Dice + DieDist * (game.Dice - 1), 24);
+            TerningeKast.Size = new Size(DieSize * Game.Dice + DieDist * (Game.Dice - 1), 24);
 
             StartAgain.Text = StartOver[GameOfDice.ChosenLanguage];
             StartAgain.Location = new Point(0, DieSize + 5 * DieDist + 27);
-            StartAgain.Size = new Size(DieSize * game.Dice + DieDist * (game.Dice - 1), 24);
+            StartAgain.Size = new Size(DieSize * Game.Dice + DieDist * (Game.Dice - 1), 24);
         }
 
         private int Rounds;
 
         public GameForm.RollState[] DiceRoll { get; set; }
+
+        private void ShowScore()
+        {
+            int diffPoints = Game.GamePoints - _computerPanel.Game.GamePoints;
+            if (diffPoints > 0)
+                MessageBox.Show(string.Format("{0} scored {1} and won by {2}", gamerName, Game.GamePoints, diffPoints));
+            if (diffPoints == 0)
+                MessageBox.Show(string.Format("{0} scored {1} and made a draw", gamerName, Game.GamePoints));
+            if (diffPoints < 0)
+                MessageBox.Show(string.Format("{0} scored {1} and lost by {2}", gamerName, Game.GamePoints, -diffPoints));
+        }
 
         /// <summary>
         /// </summary>
@@ -186,29 +247,29 @@ namespace Yatzy
             DecidingCol = int.Parse(S.Substring(dot + 1));
             RollCounter = roll;
 
-            Rubrik[DecidingRow, DecidingCol].Text = game.ScoreIt(DiceVec, DecidingRow, DecidingCol, RollCounter);
-            if (game.ScoreBoxesPerItem == 1)
+            Rubrik[DecidingRow, DecidingCol].Text = Game.ScoreIt(DiceVec, DecidingRow, DecidingCol, RollCounter);
+            if (Game.ScoreBoxesPerItem == 1)
             {
-                for (var ro = game.MaxItem + 1; ro <= game.MaxTotalItem; ro++)
-                    Rubrik[ro, DecidingCol].Text = game.ScoreIt(DiceVec, ro, DecidingCol, RollCounter);
+                for (var ro = Game.MaxItem + 1; ro <= Game.MaxTotalItem; ro++)
+                    Rubrik[ro, DecidingCol].Text = Game.ScoreIt(DiceVec, ro, DecidingCol, RollCounter);
             }
             else
             {
-                Rubrik[DecidingRow, 4].Text = game.ScoreIt(DiceVec, DecidingRow, 4, RollCounter);
-                Rubrik[DecidingRow, 5].Text = game.ScoreIt(DiceVec, DecidingRow, 5, RollCounter);
-                Rubrik[7, 5].Text = game.ScoreIt(DiceVec, 7, 5, RollCounter);
-                Rubrik[7, 4].Text = game.ScoreIt(DiceVec, 7, 4, RollCounter);
-                Rubrik[8, 5].Text = game.ScoreIt(DiceVec, 8, 5, RollCounter);
+                Rubrik[DecidingRow, 4].Text = Game.ScoreIt(DiceVec, DecidingRow, 4, RollCounter);
+                Rubrik[DecidingRow, 5].Text = Game.ScoreIt(DiceVec, DecidingRow, 5, RollCounter);
+                Rubrik[7, 5].Text = Game.ScoreIt(DiceVec, 7, 5, RollCounter);
+                Rubrik[7, 4].Text = Game.ScoreIt(DiceVec, 7, 4, RollCounter);
+                Rubrik[8, 5].Text = Game.ScoreIt(DiceVec, 8, 5, RollCounter);
             }
             Rubrik[DecidingRow, DecidingCol].Enabled = false;
             UsedScores[DecidingRow, DecidingCol] = true;
             RollCounter = 0;
             Rounds++;
-            if (Rounds < game.MaxRound)
+            if (Rounds < Game.MaxRound)
             {
                 TerningeKastText =
-                    String.Format(game.RollText(RollCounter),
-                        game.Cardinal(RollCounter));
+                    String.Format(Game.RollText(RollCounter),
+                        Game.Cardinal(RollCounter));
                 TerningeKast.Enabled = true;
                 TerningeKast.Focus();
                 Undoable = true;
@@ -217,13 +278,13 @@ namespace Yatzy
             {
                 TerningeKastText = "";
                 TerningeKast.Enabled = false;
-                checkHiScore(game, gamerName, commenced);
+                checkHiScore(Game, gamerName, commenced);
             }
             TerningeKast.Text = TerningeKastText;
 
             using (var g = Graphics.FromHwnd(Handle))
             {
-                for (var r = 0; r < game.Dice; r++)
+                for (var r = 0; r < Game.Dice; r++)
                 {
                     DiceRoll[r] = GameForm.RollState.Unborn;
                     OldDice[r] = DiceVec[r];
@@ -231,8 +292,8 @@ namespace Yatzy
                     DrawDie(g, r, 0, DieColor);
                 }
 
-                for (var r = 0; r <= game.MaxItem; r++)
-                    for (var d = game.FirstScoreBox(r); d < game.UsableScoreBoxesPerItem; d++)
+                for (var r = 0; r <= Game.MaxItem; r++)
+                    for (var d = Game.FirstScoreBox(r); d < Game.UsableScoreBoxesPerItem; d++)
                     {
                         Rubrik[r, d].Enabled = false;
                         if (!UsedScores[r, d])
@@ -323,9 +384,9 @@ namespace Yatzy
         private void DrawDie(Graphics g, int die, int val, Color DieCol)
         {
             Contract.Assert(die >= 0);
-            Contract.Assert(die < game.Dice);
+            Contract.Assert(die < Game.Dice);
 
-            DieSize = Math.Min(OptimalDieSize, ClientSize.Width * 10 / (10 * game.Dice));
+            DieSize = Math.Min(OptimalDieSize, ClientSize.Width * 9 / (10 * Game.Dice));
             DieDist = DieSize / 10;
             var CornerSize = DieDist * 7 / 6;
             var Overshoot = DieDist + CornerSize;
@@ -354,7 +415,7 @@ namespace Yatzy
 
         private void ShowSavedRolls(Graphics g)
         {
-            var Pins = new Rectangle(DieSize * game.Dice / 2 + 2 * DieDist - 7, DieSize + 2 * DieDist, 20, 10);
+            var Pins = new Rectangle(DieSize * Game.Dice / 2 + 2 * DieDist - 7, DieSize + 2 * DieDist, 20, 10);
             var format = new StringFormat
             {
                 Alignment = StringAlignment.Center,
@@ -364,11 +425,11 @@ namespace Yatzy
             using (var b = new SolidBrush(BackColor))
             {
                 g.FillRectangle(b, Pins);
-                if (game.SavedRolls > 0)
+                if (Game.SavedRolls > 0)
                 {
                     using (var br = new SolidBrush(Color.Black))
                     {
-                        var PinCount = String.Format("{0}", game.SavedRolls);
+                        var PinCount = String.Format("{0}", Game.SavedRolls);
                         g.DrawString(PinCount, Font, br, Pins, format);
                     }
                 }
@@ -390,45 +451,40 @@ namespace Yatzy
             DecidingRow = Int32.Parse(S.Substring(R.Length, dot - R.Length));
             DecidingCol = Int32.Parse(S.Substring(dot + 1));
 
-            Rubrik[DecidingRow, DecidingCol].Text = game.ScoreIt(DiceVec, DecidingRow, DecidingCol, RollCounter);
-            if (game.ScoreBoxesPerItem == 1)
+            Rubrik[DecidingRow, DecidingCol].Text = Game.ScoreIt(DiceVec, DecidingRow, DecidingCol, RollCounter);
+            if (Game.ScoreBoxesPerItem == 1)
             {
-                for (var ro = game.MaxItem + 1; ro <= game.MaxTotalItem; ro++)
-                    Rubrik[ro, DecidingCol].Text = game.ScoreIt(DiceVec, ro, DecidingCol, RollCounter);
+                for (var ro = Game.MaxItem + 1; ro <= Game.MaxTotalItem; ro++)
+                    Rubrik[ro, DecidingCol].Text = Game.ScoreIt(DiceVec, ro, DecidingCol, RollCounter);
             }
             else
             {
-                Rubrik[DecidingRow, 4].Text = game.ScoreIt(DiceVec, DecidingRow, 4, RollCounter);
-                Rubrik[DecidingRow, 5].Text = game.ScoreIt(DiceVec, DecidingRow, 5, RollCounter);
-                Rubrik[7, 5].Text = game.ScoreIt(DiceVec, 7, 5, RollCounter);
-                Rubrik[7, 4].Text = game.ScoreIt(DiceVec, 7, 4, RollCounter);
-                Rubrik[8, 5].Text = game.ScoreIt(DiceVec, 8, 5, RollCounter);
+                Rubrik[DecidingRow, 4].Text = Game.ScoreIt(DiceVec, DecidingRow, 4, RollCounter);
+                Rubrik[DecidingRow, 5].Text = Game.ScoreIt(DiceVec, DecidingRow, 5, RollCounter);
+                Rubrik[7, 5].Text = Game.ScoreIt(DiceVec, 7, 5, RollCounter);
+                Rubrik[7, 4].Text = Game.ScoreIt(DiceVec, 7, 4, RollCounter);
+                Rubrik[8, 5].Text = Game.ScoreIt(DiceVec, 8, 5, RollCounter);
             }
             Rubrik[DecidingRow, DecidingCol].Enabled = false;
             UsedScores[DecidingRow, DecidingCol] = true;
             OldRollCounter = RollCounter;
             RollCounter = 0;
             Rounds++;
-            if (Rounds < game.MaxRound)
+            if (Rounds < Game.MaxRound)
             {
                 TerningeKastText =
-                    String.Format(game.RollText(RollCounter),
-                        game.Cardinal(RollCounter));
+                    String.Format(Game.RollText(RollCounter),
+                        Game.Cardinal(RollCounter));
                 TerningeKast.Enabled = true;
                 TerningeKast.Focus();
                 Undoable = true;
             }
-            else
-            {
-                TerningeKastText = "";
-                TerningeKast.Enabled = false;
-                checkHiScore(game, gamerName, commenced);
-            }
+            
             TerningeKast.Text = TerningeKastText;
 
             using (var g = Graphics.FromHwnd(Handle))
             {
-                for (var r = 0; r < game.Dice; r++)
+                for (var r = 0; r < Game.Dice; r++)
                 {
                     DiceRoll[r] = GameForm.RollState.Unborn;
                     OldDice[r] = DiceVec[r];
@@ -436,13 +492,80 @@ namespace Yatzy
                     DrawDie(g, r, 0, DieColor);
                 }
 
-                for (var r = 0; r <= game.MaxItem; r++)
-                    for (var d = game.FirstScoreBox(r); d < game.UsableScoreBoxesPerItem; d++)
+                for (var r = 0; r <= Game.MaxItem; r++)
+                    for (var d = Game.FirstScoreBox(r); d < Game.UsableScoreBoxesPerItem; d++)
                     {
                         Rubrik[r, d].Enabled = false;
                         if (!UsedScores[r, d])
                             Rubrik[r, d].Text = "";
                     }
+                ShowSavedRolls(g);
+            }
+
+            if (_computerGame != null && _computerPanel != null)
+            {
+                _computerGame(_computerPanel); // play the other side now
+            }
+
+            if (Rounds == Game.MaxRound)
+            {
+                TerningeKastText = "";
+                TerningeKast.Enabled = false;
+                checkHiScore(Game, gamerName, commenced);
+                ShowScore();
+            }
+        }
+
+        public void UnDecider()
+        {
+            for (var d = 0; d < Game.Dice; d++)
+                DiceVec[d] = OldDice[d]; // get that roll back
+
+            RollCounter = OldRollCounter;
+            Rubrik[DecidingRow, DecidingCol].Text = Game.UnScoreIt(DiceVec, DecidingRow, DecidingCol, RollCounter);
+            if (Game.ScoreBoxesPerItem == 1)
+            {
+                for (var ro = Game.MaxItem + 1; ro <= Game.MaxTotalItem; ro++)
+                    Rubrik[ro, DecidingCol].Text = Game.UnScoreIt(DiceVec, ro, DecidingCol, RollCounter);
+            }
+            else
+            {
+                Rubrik[DecidingRow, 4].Text = Game.UnScoreIt(DiceVec, DecidingRow, 4, RollCounter);
+                Rubrik[DecidingRow, 5].Text = Game.UnScoreIt(DiceVec, DecidingRow, 5, RollCounter);
+                Rubrik[7, 5].Text = Game.UnScoreIt(DiceVec, 7, 5, RollCounter);
+                Rubrik[7, 4].Text = Game.UnScoreIt(DiceVec, 7, 4, RollCounter);
+                Rubrik[8, 5].Text = Game.UnScoreIt(DiceVec, 8, 5, RollCounter);
+            }
+            Rubrik[DecidingRow, DecidingCol].Enabled = true;
+            UsedScores[DecidingRow, DecidingCol] = false;
+            Rounds--;
+            //		if(Rounds<Game.MaxRound)
+            {
+                TerningeKastText = RollCounter == 3 && Game.SavedRolls == 0
+                    ? Result[GameOfDice.ChosenLanguage]
+                    : klik[GameOfDice.ChosenLanguage];
+                TerningeKast.Enabled = false;
+            }
+            TerningeKast.Text = TerningeKastText;
+
+            using (var g = Graphics.FromHwnd(Handle))
+            {
+                for (var r = 0; r < Game.Dice; r++)
+                {
+                    DiceRoll[r] = GameForm.RollState.HoldMe;
+                    DrawDie(g, r, DiceVec[r], Color.Red);
+                }
+
+                for (var r = 0; r <= Game.MaxItem; r++)
+                    for (var d = Game.FirstScoreBox(r); d < Game.UsableScoreBoxesPerItem; d++)
+                    {
+                        if (!UsedScores[r, d])
+                        {
+                            Rubrik[r, d].Enabled = true;
+                            Rubrik[r, d].Text = "";
+                        }
+                    }
+
                 ShowSavedRolls(g);
             }
         }
@@ -454,7 +577,7 @@ namespace Yatzy
         private void OnButtonClicked(Object sender, EventArgs e)
         {
             Undoable = false;
-            TerningeKastText = RollCounter == 2 && game.SavedRolls == 0
+            TerningeKastText = RollCounter == 2 && Game.SavedRolls == 0
                 ? Result[GameOfDice.ChosenLanguage]
                 : klik[GameOfDice.ChosenLanguage];
             TerningeKast.Text = TerningeKastText;
@@ -465,13 +588,13 @@ namespace Yatzy
             RollCounter++;
             if (RollCounter > 3)
             {
-                game.UseARoll();
+                Game.UseARoll();
             }
             using (var g = Graphics.FromHwnd(Handle))
             {
                 ShowSavedRolls(g);
 
-                for (var i = 0; i < game.Dice; i++)
+                for (var i = 0; i < Game.Dice; i++)
                     if (DiceRoll[i] != GameForm.RollState.HoldMe)
                     {
                         DiceRoll[i] = GameForm.RollState.HoldMe;
@@ -479,8 +602,8 @@ namespace Yatzy
                         DrawDie(g, i, DiceVec[i], DieColor);
                     }
 
-                for (var r = 0; r <= game.MaxItem; r++)
-                    for (var j = game.FirstScoreBox(r); j < game.UsableScoreBoxesPerItem; j++)
+                for (var r = 0; r <= Game.MaxItem; r++)
+                    for (var j = Game.FirstScoreBox(r); j < Game.UsableScoreBoxesPerItem; j++)
                     {
                         if (!UsedScores[r, j])
                             Rubrik[r, j].Enabled = true;
@@ -493,7 +616,7 @@ namespace Yatzy
             Undoable = false;
 
             RollCounter = 0;
-            TerningeKastText = String.Format(game.RollText(RollCounter), game.Cardinal(RollCounter));
+            TerningeKastText = String.Format(Game.RollText(RollCounter), Game.Cardinal(RollCounter));
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Enabled = true;
             TerningeKast.Focus();
@@ -501,11 +624,11 @@ namespace Yatzy
             TargetDie = -1;
 
             Rounds = 0;
-            game.NewGame();
+            Game.NewGame();
 
             using (var g = Graphics.FromHwnd(Handle))
             {
-                for (var i = 0; i < game.Dice; i++)
+                for (var i = 0; i < Game.Dice; i++)
                 {
                     DiceRoll[i] = GameForm.RollState.Unborn;
                     DiceVec[i] = 0;
@@ -515,15 +638,15 @@ namespace Yatzy
             }
 
             int r;
-            for (r = 0; r <= game.MaxItem; r++)
-                for (var j = game.FirstScoreBox(r); j < game.ScoreBoxesPerItem; j++)
+            for (r = 0; r <= Game.MaxItem; r++)
+                for (var j = Game.FirstScoreBox(r); j < Game.ScoreBoxesPerItem; j++)
                 {
                     UsedScores[r, j] = false;
                     Rubrik[r, j].Enabled = false;
                     Rubrik[r, j].Text = "";
                 }
 
-            for (; r <= game.MaxTotalItem; r++)
+            for (; r <= Game.MaxTotalItem; r++)
             {
                 Rubrik[r, 0].Enabled = false;
                 Rubrik[r, 0].Text = "";
@@ -539,13 +662,13 @@ namespace Yatzy
                 return;
             var DieClicked = e.X / (DieSize + DieDist);
 
-            if (DieClicked >= game.Dice)
+            if (DieClicked >= Game.Dice)
                 return;
 
             if (RollCounter == 0)
                 return;
 
-            if (RollCounter >= 3 && game.SavedRolls == 0)
+            if (RollCounter >= 3 && Game.SavedRolls == 0)
                 return;
 
             var SameDie = SaveTargetDie == DieClicked;
@@ -564,7 +687,7 @@ namespace Yatzy
                 ShowSavedRolls(g);
             }
 
-            TerningeKastText = String.Format(game.RollText(RollCounter), game.Cardinal(RollCounter));
+            TerningeKastText = String.Format(Game.RollText(RollCounter), Game.Cardinal(RollCounter));
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Enabled = true;
             TerningeKast.Focus();
