@@ -232,12 +232,14 @@ namespace Yatzy
         public virtual int ValueIt(int[] nw, int i)
         {
             int d = nw.Sum();
+            if (d == 0)
+                return 0;
             if (d < Dice)
                 throw new ArgumentException("Not a proper roll");
 
             points(nw);
 
-            return pts[i];
+            return i < pts.Length ? pts[i] : 0;
         }
 
         public enum Language { Danish, Swedish, English };
@@ -1679,9 +1681,9 @@ namespace Yatzy
             foreach (int di in nw)
             { // check for die with six sides
                 if (di < 1)
-                    throw new ArgumentException("UNFL"); // can't be a proper roll of a die
+                    return 0; // can't be a proper roll of a die
                 if (di > 6)
-                    throw new ArgumentException("OVFL"); // can't be a proper roll of a die
+                    throw new ArgumentException("OVFL"); // can't be a proper roll of a six-sided die
             }
 
             points(nw);

@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using Yatzy.Properties;
 
 namespace Yatzy
 {
@@ -20,8 +22,13 @@ namespace Yatzy
             InitializeComponent();
 
             var collectPlayerName = new PlayerName();
-            collectPlayerName.ShowDialog();
             Player = collectPlayerName.UserName;
+
+            gameSizes.Add("Maxiyatzy", new Size(885, 415));
+            gameSizes.Add("Yatzy", new Size(602, 449));
+            gameSizes.Add("Yahtzee", new Size(602, 413));
+            gameSizes.Add("Balut", new Size(602, 432));
+
             InitForm(CollectGameName());
         }
 
@@ -38,7 +45,7 @@ namespace Yatzy
                     DataViewRowState.CurrentRows);
                 var scoreTable = Score.ToTable();
 
-                // get rid of HumanGame Name since it is now redundant
+                // get rid of Game Name since it is now redundant
                 // prettyprint date and time
                 var editedScoreTable = new DataTable();
                 editedScoreTable.Columns.Add("Player", typeof(string));
@@ -67,7 +74,7 @@ namespace Yatzy
                         editedScoreTable.Rows.Add(dr.Field<string>("Player"), started, ts, ToUShort(point));
                     }
                 }
-                var hiScore = new ScoreView
+                var hiScore = new ScoreView(ScoreViewClosing)
                 {
                     Text = string.Format("{0} {1}", Name, "Score"),
                     Left = Size.Width + Left,
@@ -80,6 +87,14 @@ namespace Yatzy
             {
                 MessageBox.Show("" + e);
             }
+        }
+
+        /// <summary>
+        /// Clean up if case score view is closed
+        /// </summary>
+        private void ScoreViewClosing()
+        {
+            _score = null;
         }
 
         private void CheckHiScore(GameOfDice game, string gamerName, DateTime commenced)
@@ -112,7 +127,7 @@ namespace Yatzy
                     /* string Sort = */ "Bonus DESC, Point DESC",
                     DataViewRowState.CurrentRows);
                 const int HiLen = 10;
-                const string HiScore = "You made the Top 10!";
+                string HiScore = gamerName + " made the Top 10!";
                 var ScoreHigh = false;
                 if (Score.Count <= HiLen)
                 {
@@ -147,7 +162,7 @@ namespace Yatzy
 
                 if (_score == null)
                 {
-                    _score = new ScoreView();
+                    _score = new ScoreView(ScoreViewClosing);
                 }
                 _score.Hide();
                 _score.Left = Size.Width + Left;
@@ -256,24 +271,20 @@ namespace Yatzy
             //scorePanels.Width = _humanPanel.Width * 2;
 
             // Set the form's size
-            //ClientSize = new Size(Math.Max(HumanGame.Dice * OptimalDieSize * 11 / 10, scorePanels.Width), ScoreCardStart + _humanPanel.Height);
+            //ClientSize = new Size(Math.Max(HumanGame.Dice * OptimalDieSize * 9 / 10, scorePanels.Width), ScoreCardStart + _humanPanel.Height);
 
             GameOfDice.ChosenLanguage = ChosenLanguage;
-            var computerPanel = new GamePanel(HalGame, "HAL", CheckHiScore, null, null) { DieColor = Color.Blue, };
-            var humanPanel = new GamePanel(HumanGame, Player, CheckHiScore, AutoGame, computerPanel) { DieColor = Color.Red };
+            GamePanel computerPanel = new ComputerPanel(HalGame, CheckHiScore) { DieColor = Color.Blue, };
+            GamePanel humanPanel = new HumanPanel(HumanGame, Player, CheckHiScore, AutoGame, computerPanel) { DieColor = Color.Red };
             scorePanels.Controls.Add(_computerPlaysFirst ? computerPanel : humanPanel, 0, 0);
             scorePanels.Controls.Add(_computerPlaysFirst ? humanPanel : computerPanel, 1, 0);
 
             Controls.Add(scorePanels);
 
+            //FormTransform.TransformSize(scorePanels, new Size(humanPanel.Width * 2, humanPanel.Height + humanPanel.Top));
             if (_computerPlaysFirst)
             {
                 AutoGame(computerPanel);
-                ClientSize = new Size(computerPanel.Width * 2, computerPanel.Height);
-            }
-            else
-            {
-                ClientSize = new Size(humanPanel.Width * 2, humanPanel.Height);
             }
 
             //for (var row = 0; row < HalGame.UsableItems; row++)
@@ -298,7 +309,7 @@ namespace Yatzy
         private static readonly Random DiceGen = new Random();
         private bool _computerPlaysFirst = DiceGen.Next(2) == 0;
 
-        private void AutoGame(GamePanel panel)
+        private static void AutoGame(GamePanel panel)
         {
             GameOfDice game = panel.Game;
             var bestScore = -1;
@@ -343,8 +354,11 @@ namespace Yatzy
                     }
                 }
             }
-            var itemStr = string.Format("{0}{1}.{2}", "Rubrik", bestScoreRow, bestScoreCol);
-            panel.ScoreIt(itemStr, roll);
+            if (bestScoreRow >= 0)
+            {
+                var itemStr = string.Format("{0}.{1}", bestScoreRow, bestScoreCol);
+                panel.ScoreIt(itemStr, roll);
+            }
         }
 
 
@@ -445,7 +459,7 @@ namespace Yatzy
         {
             foreach (GamePanel panel in scorePanels.Controls)
             {
-                if (panel.GamerName != "HAL")
+                if (panel is HumanPanel)
                 {
                     panel.UnDecider();
                 }
@@ -479,6 +493,7 @@ namespace Yatzy
             PlayYahtzee.Checked = false;
             PlayMaxiyatzy.Checked = false;
             PlayBalut.Checked = false;
+            Size = gameSizes["Yatzy"];
             if (!b)
                 InitForm("Yatzy");
         }
@@ -490,6 +505,7 @@ namespace Yatzy
             PlayYahtzee.Checked = true;
             PlayMaxiyatzy.Checked = false;
             PlayBalut.Checked = false;
+            Size = gameSizes["Yahtzee"];
             if (!b)
                 InitForm("Yahtzee");
         }
@@ -501,6 +517,7 @@ namespace Yatzy
             PlayYahtzee.Checked = false;
             PlayMaxiyatzy.Checked = true;
             PlayBalut.Checked = false;
+            Size = gameSizes["Maxiyatzy"];
             if (!b)
                 InitForm("Maxiyatzy");
         }
@@ -512,6 +529,7 @@ namespace Yatzy
             PlayYahtzee.Checked = false;
             PlayMaxiyatzy.Checked = false;
             PlayBalut.Checked = true;
+            Size = gameSizes["Balut"];
             if (!b)
                 InitForm("Balut");
         }
@@ -573,6 +591,49 @@ namespace Yatzy
                 //			case myHelpEnum.enumMechanism:
                 //				// Insert code to implement additional functionality.
                 //				break;
+            }
+        }
+
+        readonly Dictionary<string, Size> gameSizes = new Dictionary<string, Size>();
+
+        private void GameForm_Load(object sender, EventArgs e)
+        {
+            if ((ModifierKeys & Keys.Shift) == 0)
+            {
+                string initLocation = Settings.Default.InitialLocation;
+                Point il = new Point(0, 0);
+                Size sz = Size;
+                if (!string.IsNullOrWhiteSpace(initLocation))
+                {
+                    string[] parts = initLocation.Split(',');
+                    if (parts.Length >= 2)
+                    {
+                        il = new Point(int.Parse(parts[0]), int.Parse(parts[1]));
+                    }
+                    if (parts.Length >= 4)
+                    {
+                        sz = new Size(int.Parse(parts[2]), int.Parse(parts[3]));
+                    }
+                }
+                Size = sz;
+                Location = il;
+            }
+        }
+
+        private void GameForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if ((ModifierKeys & Keys.Shift) == 0)
+            {
+                Point location = Location;
+                Size size = Size;
+                if (WindowState != FormWindowState.Normal)
+                {
+                    location = RestoreBounds.Location;
+                    size = RestoreBounds.Size;
+                }
+                string initLocation = string.Join(",", location.X, location.Y, size.Width, size.Height);
+                Settings.Default.InitialLocation = initLocation;
+                Settings.Default.Save();
             }
         }
 

@@ -80,6 +80,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.notOkButton;
             this.ClientSize = new System.Drawing.Size(284, 61);
+            this.ControlBox = false;
             this.Controls.Add(this.notOkButton);
             this.Controls.Add(this.okButton);
             this.Controls.Add(this.label1);

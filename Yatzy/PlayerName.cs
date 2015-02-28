@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -27,7 +20,7 @@ namespace Yatzy
                 UserName = "NN";
             }
 
-            _gameKey = Registry.CurrentUser.CreateSubKey(MyForm.RegFolder);
+            _gameKey = Registry.CurrentUser.CreateSubKey(GameForm.RegFolder);
             UserName = _gameKey.GetValue("Player Name", UserName).ToString();
         }
 
@@ -44,8 +37,8 @@ namespace Yatzy
 
         private void NameBox_TextChanged(object sender, EventArgs e)
         {
-            string name = NameBox.Text.Trim();
-            okButton.Enabled = !string.IsNullOrEmpty(name) && name.ToUpper() != "HAL";
+            string name = NameBox.Text.Trim().ToUpper();
+            okButton.Enabled = !string.IsNullOrEmpty(name) && !name.StartsWith("HAL");
         }
     }
 }

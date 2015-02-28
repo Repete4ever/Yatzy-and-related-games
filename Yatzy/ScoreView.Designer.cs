@@ -60,6 +60,9 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "ScoreView";
+            this.TopMost = true;
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ScoreView_FormClosing);
+            this.Load += new System.EventHandler(this.ScoreView_Load);
             ((System.ComponentModel.ISupportInitialize)(this.ScoreGrid)).EndInit();
             this.ResumeLayout(false);
 
