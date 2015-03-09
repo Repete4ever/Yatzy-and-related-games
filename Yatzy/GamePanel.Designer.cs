@@ -69,16 +69,16 @@
             // timer1
             // 
             this.timer1.Interval = 50;
-            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            this.timer1.Tick += new System.EventHandler(this.Rolling);
             this.ResumeLayout(false);
 
         }
 
         #endregion
 
-        protected System.Windows.Forms.Button TerningeKast;
         protected System.Windows.Forms.Button StartAgain;
         private System.Windows.Forms.Timer timer1;
         protected System.Windows.Forms.Label nameLabel;
+        public System.Windows.Forms.Button TerningeKast;
     }
 }

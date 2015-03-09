@@ -41,7 +41,7 @@ namespace Yatzy
             }
             set
             {
-                ScoreGrid.Rows[value].Selected = true; ;
+                ScoreGrid.Rows[value].Selected = true; 
             }
         }
 

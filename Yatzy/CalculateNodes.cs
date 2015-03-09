@@ -83,7 +83,7 @@ namespace Yatzy
                         {
                             throw new ApplicationException("Trouble with node " + NodeNo);
                         }
-                        if (_game.varians)
+                        if (FiveDice.varians)
                         {
                             float v = (float)_game.vari[NodeNo];
                             //						pout.print(" " + ((System.Double)v).ToString("F4"));

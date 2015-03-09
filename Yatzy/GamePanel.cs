@@ -19,21 +19,22 @@ namespace Yatzy
         // The static resources e.g buttons are on the Design page
 
         private readonly string[] StartOver = { "Nyt spil", "Starta om", "New game" };
-        public static readonly string[] klik =
+
+        private static readonly string[] klik =
         {
             "Klik på de terninger du vil slå om",
             "Klicka på de tärninger du vill slå om",
             "Select dice and reroll"
         };
 
-        public static readonly string[] Result =
+        private static readonly string[] Result =
         {
             "Registrér resultatet i tabellen",
             "Registrere resultatet i tabellen",
             "Select a score box"
         };
 
-        public TextBox[,] Rubrik;
+        protected TextBox[,] Rubrik;
 
         private int[] OldDice;
         public static bool Undoable { get; set; }
@@ -42,20 +43,20 @@ namespace Yatzy
         private const int ScoreSpacing = ItemWidth / 3;
         private const int ItemTop = 175;
 
-        public string gamerName;
+        protected string gamerName;
         private readonly DateTime commenced;
 
         private readonly CheckHiScore checkHiScore;
 
         private int OldRollCounter;
-        private int RollCounter;
+        protected int RollCounter;
 
         public int[] DiceVec;
 
-        private readonly AutoGame _computerGame;
-        private readonly GamePanel _computerPanel;
+        //private readonly AutoGame _computerGame;
+        public GamePanel OtherPanel { get; set; }
 
-        public GamePanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore, AutoGame computerGame, GamePanel computerPanel)
+        protected GamePanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore)
         {
             ResizeRedraw = true; 
             
@@ -71,8 +72,7 @@ namespace Yatzy
             commenced = DateTime.Now;
             this.checkHiScore = checkHiScore;
 
-            _computerGame = computerGame;
-            _computerPanel = computerPanel;
+            //_computerGame = computerGame;
 
             DrawPanel();
         }
@@ -173,7 +173,7 @@ namespace Yatzy
         {
         }
 
-        public int ComputeDieSize(int NoOfDice)
+        private int ComputeDieSize(int NoOfDice)
         {
             return Math.Min(OptimalDieSize, ClientSize.Width * 9 / (10 * NoOfDice));
         }
@@ -211,18 +211,20 @@ namespace Yatzy
 
             ShowSavedRolls(e.Graphics);
 
+            Size oneSizeFitsAll = new Size(DieSize * Game.Dice + DieDist * (Game.Dice - 1), 24);
+
             TerningeKastText = String.Format(Game.RollText(RollCounter), Game.Cardinal(0));
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Location = new Point(0, DieSize + 5 * DieDist);
-            TerningeKast.Size = new Size(DieSize * Game.Dice + DieDist * (Game.Dice - 1), 24);
+            TerningeKast.Size = oneSizeFitsAll;
 
             StartAgain.Text = StartOver[GameOfDice.ChosenLanguage];
             StartAgain.Location = new Point(0, DieSize + 5 * DieDist + 27);
-            StartAgain.Size = new Size(DieSize * Game.Dice + DieDist * (Game.Dice - 1), 24);
+            StartAgain.Size = oneSizeFitsAll;
 
             nameLabel.Text = GamerName;
             nameLabel.Location = new Point(0, DieSize + 5 * DieDist + 54);
-            nameLabel.Size = new Size(DieSize * Game.Dice + DieDist * (Game.Dice - 1), 24);
+            nameLabel.Size = oneSizeFitsAll;
             nameLabel.ForeColor = DieColor;
         }
 
@@ -232,7 +234,7 @@ namespace Yatzy
 
         private void ShowScore()
         {
-            int diffPoints = Game.GamePoints - _computerPanel.Game.GamePoints;
+            int diffPoints = Game.GamePoints - OtherPanel.Game.GamePoints;
             if (diffPoints > 0)
                 MessageBox.Show(string.Format("{0} scored {1} and won by {2}", gamerName, Game.GamePoints, diffPoints));
             if (diffPoints == 0)
@@ -286,7 +288,8 @@ namespace Yatzy
             {
                 TerningeKastText = "";
                 TerningeKast.Enabled = false;
-                checkHiScore(Game, gamerName, commenced);
+                // Checking hi score is premature here since the human player may still have one final score to settle
+                //checkHiScore(Game, gamerName, commenced);
             }
             TerningeKast.Text = TerningeKastText;
 
@@ -313,13 +316,13 @@ namespace Yatzy
         }
 
         public bool[,] UsedScores;
-        private int DieSize;
-        private int DieDist;
-        public string TerningeKastText { get; set; }
+        protected int DieSize;
+        protected int DieDist;
+        private string TerningeKastText { get; set; }
 
         public static bool Touchy { get; set; }
 
-        public string GamerName
+        private string GamerName
         {
             get { return gamerName; }
         }
@@ -385,7 +388,7 @@ namespace Yatzy
             }
         }
 
-        private void DrawDie(Graphics g, int die, int val, Color DieCol)
+        protected void DrawDie(Graphics g, int die, int val, Color DieCol)
         {
             Contract.Assert(die >= 0);
             Contract.Assert(die < Game.Dice);
@@ -417,7 +420,7 @@ namespace Yatzy
             }
         }
 
-        private void ShowSavedRolls(Graphics g)
+        protected void ShowSavedRolls(Graphics g)
         {
             var Pins = new Rectangle(DieSize * Game.Dice / 2 + 2 * DieDist - 7, DieSize + 2 * DieDist, 20, 10);
             var format = new StringFormat
@@ -442,15 +445,17 @@ namespace Yatzy
 
         private int DecidingRow;
         private int DecidingCol;
-        public TextBox[] Items;
+        private TextBox[] Items;
 
         protected void myMouseDecider(object sender)
         {
             var control = (Control)sender;
             ScoreIt(control.Tag.ToString(), RollCounter);
-            if (_computerGame != null && _computerPanel != null)
+            if (OtherPanel != null)
             {
-                _computerGame(_computerPanel); // play the other side now
+                TerningeKast.Visible = false;
+                OtherPanel.TerningeKast.Visible = true;
+                //_computerGame(_otherPanel); // play the other side now
             }
 
             if (Rounds == Game.MaxRound)
@@ -458,6 +463,10 @@ namespace Yatzy
                 TerningeKastText = "";
                 TerningeKast.Enabled = false;
                 checkHiScore(Game, gamerName, commenced);
+                if (OtherPanel != null)
+                {
+                    checkHiScore(OtherPanel.Game, OtherPanel.gamerName, commenced);
+                }
                 ShowScore();
             }
         }
@@ -517,9 +526,9 @@ namespace Yatzy
             }
         }
 
-        private int TargetDie = -1; // when selecting dice by merely moving the mouse
-
         private readonly Random DiceGen = new Random();
+
+        protected int TargetDie = -1; // when selecting dice by merely moving the mouse
 
         private void OnButtonClicked(Object sender, EventArgs e)
         {
@@ -549,7 +558,7 @@ namespace Yatzy
             }
         }
 
-        public void NewGame()
+        private void NewGame()
         {
             OnButtonClicked2(StartAgain, new EventArgs());
         }
@@ -598,62 +607,18 @@ namespace Yatzy
                 Rubrik[r, 0].Text = "";
             }
 
-            if (_computerPanel != null)
+            if (OtherPanel != null)
             {
-                _computerPanel.NewGame();
+                OtherPanel.NewGame();
             }
         }
 
-        protected void TouchOrClick(MouseEventArgs e)
+        protected void UpdateTerningeKast()
         {
-            var SaveTargetDie = TargetDie;
-            TargetDie = -1;
-
-            if (e.Y > DieSize)
-                return;
-            var DieClicked = e.X / (DieSize + DieDist);
-
-            if (DieClicked >= Game.Dice)
-                return;
-
-            if (RollCounter == 0)
-                return;
-
-            if (RollCounter >= 3 && Game.SavedRolls == 0)
-                return;
-
-            var SameDie = SaveTargetDie == DieClicked;
-            TargetDie = DieClicked;
-            if (Touchy && SameDie)
-                return;
-            var ThisDieMustRoll = DiceRoll[DieClicked] == GameForm.RollState.RollMe;
-
-            DiceRoll[DieClicked] = ThisDieMustRoll ? GameForm.RollState.HoldMe : GameForm.RollState.RollMe;
-
-            using (var g = Graphics.FromHwnd(Handle))
-            {
-                DrawDie(g, DieClicked, DiceVec[DieClicked],
-                    ThisDieMustRoll ? DieColor : Color.Black);
-
-                ShowSavedRolls(g);
-            }
-
             TerningeKastText = String.Format(Game.RollText(RollCounter), Game.Cardinal(RollCounter));
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Enabled = true;
             TerningeKast.Focus();
-        }
-
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            if (!Touchy)
-                TouchOrClick(e);
-        }
-
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            if (Touchy)
-                TouchOrClick(e);
         }
 
         protected override void OnMouseLeave(EventArgs e)
@@ -663,7 +628,7 @@ namespace Yatzy
 
         private int _rolling;
 
-        private void timer1_Tick(object sender, EventArgs e)
+        private void Rolling(object sender, EventArgs e)
         {
             using (var g = Graphics.FromHwnd(Handle))
             {
@@ -700,10 +665,20 @@ namespace Yatzy
                     }
                 }
             }
+
+            AutoDecide();
         }
 
         /// <summary>
-        /// Change player name must be virtual since the computer opponent's name is fixed
+        /// Let the computer look at the roll and decide whether to reroll or score the dice.
+        /// </summary>
+        protected virtual void AutoDecide()
+        {
+            
+        }
+
+        /// <summary>
+        /// Change player name must be virtual since the computer's name mustn't be changed
         /// </summary>
         protected virtual void NameLabelClicked()
         {

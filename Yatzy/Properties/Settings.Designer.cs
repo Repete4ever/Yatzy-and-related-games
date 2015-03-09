@@ -46,5 +46,17 @@ namespace Yatzy.Properties {
                 this["ScoreLocation"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Yatzy")]
+        public string GameSetting {
+            get {
+                return ((string)(this["GameSetting"]));
+            }
+            set {
+                this["GameSetting"] = value;
+            }
+        }
     }
 }

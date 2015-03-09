@@ -5,7 +5,6 @@ using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
-using Microsoft.Win32;
 using Yatzy.Properties;
 
 namespace Yatzy
@@ -13,6 +12,7 @@ namespace Yatzy
     public partial class GameForm : Form
     {
         public const string RegFolder = @"Software\PHDGames\";
+        private const string ScoresFileName = "Scores.xml";
 
         private ScoreView _score;
         private int ChosenLanguage = CollectLanguage();
@@ -29,18 +29,31 @@ namespace Yatzy
             gameSizes.Add("Yahtzee", new Size(602, 413));
             gameSizes.Add("Balut", new Size(602, 432));
 
+            string folder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            _gamesFolder = Path.Combine(folder, "PHDGames");
+            if (!Directory.Exists(_gamesFolder))
+            {
+                Directory.CreateDirectory(_gamesFolder);
+            }
+            string scoreFile = Path.Combine(_gamesFolder, ScoresFileName);
+            if (!File.Exists(scoreFile))
+            {
+                File.Copy(ScoresFileName, scoreFile);
+                const string styleSheet = "Scores.xslt";
+                File.Copy(styleSheet, Path.Combine(_gamesFolder, styleSheet));
+            }
             InitForm(CollectGameName());
         }
 
-        private void ShowHiScore()
+        private void ShowHiScore(string gameText)
         {
-            const string ScoreFile = @"Scores.xml";
+            string ScoreFile = Path.Combine(_gamesFolder, ScoresFileName);
             try
             {
                 var Scores = new DataSet();
                 Scores.ReadXml(ScoreFile);
                 var Score = new DataView(Scores.Tables["Score"],
-                    /* string Filter = */ "Game = " + "'" + Name + "'",
+                    /* string Filter = */ "Game = " + "'" + gameText + "'",
                     /* string Sort = */ "Bonus DESC, Point DESC",
                     DataViewRowState.CurrentRows);
                 var scoreTable = Score.ToTable();
@@ -52,7 +65,7 @@ namespace Yatzy
                 editedScoreTable.Columns.Add("Commenced", typeof(string));
                 editedScoreTable.Columns.Add("Duration", typeof(TimeSpan));
                 editedScoreTable.Columns.Add("Point", typeof(ushort));
-                if (Name == "Balut")
+                if (gameText == "Balut")
                 {
                     editedScoreTable.Columns.Add("Bonus", typeof(ushort));
                 }
@@ -63,7 +76,7 @@ namespace Yatzy
                     var point = dr.Field<long>("Point");
                     var started = DateTime.Parse(commenced);
                     var ts = DateTime.Parse(ended) - started;
-                    if (Name == "Balut")
+                    if (gameText == "Balut")
                     {
                         var bonus = dr.Field<long>("Bonus");
                         editedScoreTable.Rows.Add(dr.Field<string>("Player"), started, ts, ToUShort(point),
@@ -76,7 +89,7 @@ namespace Yatzy
                 }
                 var hiScore = new ScoreView(ScoreViewClosing)
                 {
-                    Text = string.Format("{0} {1}", Name, "Score"),
+                    Text = string.Format("{0} {1}", gameText, "Score"),
                     Left = Size.Width + Left,
                     Top = Top,
                     Source = editedScoreTable
@@ -99,8 +112,8 @@ namespace Yatzy
 
         private void CheckHiScore(GameOfDice game, string gamerName, DateTime commenced)
         {
-            const string ScoreFile = @"Scores.xml";
-            const string OldScoreFile = ScoreFile;
+            string ScoreFile = Path.Combine(_gamesFolder, ScoresFileName);
+            string OldScoreFile = ScoreFile;
             //		string ScoreFileSchema = @"Scores.xsd";
 
             try
@@ -226,56 +239,49 @@ namespace Yatzy
         private GameOfDice HalGame;
         private readonly string Player;
 
-        private void InitForm(string GameText)
+        private void InitForm(string gameText)
         {
             HumanGame = null;
-            if (GameText == "Yatzy")
+            if (gameText == "Yatzy")
                 HumanGame = new Yatzy();
-            if (GameText == "Yahtzee")
+            if (gameText == "Yahtzee")
                 HumanGame = new Yahtzee();
-            if (GameText == "Maxiyatzy")
+            if (gameText == "Maxiyatzy")
                 HumanGame = new Maxiyatzy();
-            if (GameText == "Balut")
+            if (gameText == "Balut")
                 HumanGame = new Balut();
             if (HumanGame == null)
                 HumanGame = new Yatzy();
 
             HalGame = null;
-            if (GameText == "Yatzy")
+            if (gameText == "Yatzy")
                 HalGame = new Yatzy();
-            if (GameText == "Yahtzee")
+            if (gameText == "Yahtzee")
                 HalGame = new Yahtzee();
-            if (GameText == "Maxiyatzy")
+            if (gameText == "Maxiyatzy")
                 HalGame = new Maxiyatzy();
-            if (GameText == "Balut")
+            if (gameText == "Balut")
                 HalGame = new Balut();
             if (HalGame == null)
                 HalGame = new Yatzy();
 
-            SaveGameName(GameText);
+            SaveGameName(gameText);
 
             HumanGame.InhabitTables();
             HalGame.InhabitTables();
 
-            // Set the form's title
             Text = HumanGame + " on a date with C#";
-            //Name = HumanGame.ToString();
 
             scorePanels.Controls.Clear();
             Controls.Remove(scorePanels);
             
             _computerPlaysFirst ^= true;
 
-            //scorePanels.Height = _humanPanel.Height;
-            //scorePanels.Top = ScoreCardStart;
-            //scorePanels.Width = _humanPanel.Width * 2;
-
-            // Set the form's size
-            //ClientSize = new Size(Math.Max(HumanGame.Dice * OptimalDieSize * 9 / 10, scorePanels.Width), ScoreCardStart + _humanPanel.Height);
-
             GameOfDice.ChosenLanguage = ChosenLanguage;
             GamePanel computerPanel = new ComputerPanel(HalGame, CheckHiScore) { DieColor = Color.Blue, };
-            GamePanel humanPanel = new HumanPanel(HumanGame, Player, CheckHiScore, AutoGame, computerPanel) { DieColor = Color.Red };
+            GamePanel humanPanel = new HumanPanel(HumanGame, Player, CheckHiScore) { DieColor = Color.Red };
+            computerPanel.OtherPanel = humanPanel;
+            humanPanel.OtherPanel = computerPanel;
             scorePanels.Controls.Add(_computerPlaysFirst ? computerPanel : humanPanel, 0, 0);
             scorePanels.Controls.Add(_computerPlaysFirst ? humanPanel : computerPanel, 1, 0);
 
@@ -284,7 +290,9 @@ namespace Yatzy
             //FormTransform.TransformSize(scorePanels, new Size(humanPanel.Width * 2, humanPanel.Height + humanPanel.Top));
             if (_computerPlaysFirst)
             {
-                AutoGame(computerPanel);
+                //AutoGame(computerPanel);
+                humanPanel.TerningeKast.Visible = false;
+                computerPanel.TerningeKast.Visible = true;
             }
 
             //for (var row = 0; row < HalGame.UsableItems; row++)
@@ -312,40 +320,78 @@ namespace Yatzy
         private static void AutoGame(GamePanel panel)
         {
             GameOfDice game = panel.Game;
-            var bestScore = -1;
-            var bestScoreRow = -1;
-            var bestScoreCol = -1;
+            int bestScore;
+            int bestScoreCol;
             panel.DiceVec = new int[game.Dice];
             panel.DiceRoll = new RollState[game.Dice];
             int roll;
-            for (roll = 1; roll <= 3; roll++)
+            //for (var i = 0; i < game.Dice; i++)
+            //{
+            //    panel.DiceVec[i] = DiceGen.Next(1, 7);
+            //}
+            for (roll = 1; roll <= 3 + game.SavedRolls; roll++)
             {
                 var rolling = false;
+                
+                // evaluate the roll. If we are lucky it is good already.
+                BestChoice(panel, game, game.GradeIt, out bestScoreCol, out bestScore);
+                if (bestScore == 100)
+                {
+                    BestChoice(panel, game, game.ValueIt, out bestScoreCol, out bestScore);
+                    if (bestScore >= 15)
+                    {
+                        break;
+                    }
+                }
+
                 for (var i = 0; i < game.Dice; i++)
+                {
                     if (panel.DiceRoll[i] != RollState.HoldMe)
                     {
-                        var die = panel.DiceVec[i] = DiceGen.Next(1, 7);
-                        if (die == 6)
+                        if (panel.DiceVec[i] == 6)
                         {
                             panel.DiceRoll[i] = RollState.HoldMe;
                         }
                         else
                         {
                             panel.DiceRoll[i] = RollState.RollMe;
+                            ComputerPanel cPanel = panel as ComputerPanel;
+                            if (cPanel != null)
+                            {
+                                cPanel.Reroll();
+                            }
                             rolling = true;
                         }
                     }
+                }
                 if (!rolling)
                 {
                     break; // save a roll or two (only MaxiYatzy takes advantage though)
                 }
             }
+
+            var bestScoreRow = BestChoice(panel, game, game.ValueIt, out bestScoreCol, out bestScore);
+
+            if (bestScoreRow >= 0)
+            {
+                var itemStr = string.Format("{0}.{1}", bestScoreRow, bestScoreCol);
+                panel.ScoreIt(itemStr, roll);
+            }
+        }
+
+        private delegate int EvalScore(int[] vec, int bestRow);
+
+        private static int BestChoice(GamePanel panel, GameOfDice game, EvalScore es, out int bestScoreCol, out int bestScore)
+        {
+            bestScore = -1;
+            int bestScoreRow = -1;
+            bestScoreCol = -1;
             for (var row = 0; row < game.UsableItems; row++)
             {
                 for (var col = 0; col < game.UsableScoreBoxesPerItem; col++)
                 {
                     if (panel.UsedScores[row, col]) continue;
-                    var diceValue = game.ValueIt(panel.DiceVec, row);
+                    var diceValue = es(panel.DiceVec, row);
                     if (diceValue > bestScore)
                     {
                         bestScore = diceValue;
@@ -354,11 +400,7 @@ namespace Yatzy
                     }
                 }
             }
-            if (bestScoreRow >= 0)
-            {
-                var itemStr = string.Format("{0}.{1}", bestScoreRow, bestScoreCol);
-                panel.ScoreIt(itemStr, roll);
-            }
+            return bestScoreRow;
         }
 
 
@@ -391,14 +433,13 @@ namespace Yatzy
 
         private static string CollectGameName()
         {
-            var GameKey = Registry.CurrentUser.CreateSubKey(RegFolder);
-            return GameKey != null ? GameKey.GetValue("Game Name", "Yatzy").ToString() : "Yatzy";
+            return Settings.Default.GameSetting;
         }
 
         private static void SaveGameName(string name)
         {
-            var GameKey = Registry.CurrentUser.CreateSubKey(RegFolder);
-            if (GameKey != null) GameKey.SetValue("Game Name", name);
+            Settings.Default.GameSetting = name;
+            Settings.Default.Save();
         }
 
         private static ushort ToUShort(long val)
@@ -536,7 +577,7 @@ namespace Yatzy
 
         private void OnHiScore(object sender, EventArgs e)
         {
-            ShowHiScore();
+            ShowHiScore(CollectGameName());
         }
 
         private void OnRules(object sender, EventArgs e)
@@ -595,6 +636,7 @@ namespace Yatzy
         }
 
         readonly Dictionary<string, Size> gameSizes = new Dictionary<string, Size>();
+        private string _gamesFolder;
 
         private void GameForm_Load(object sender, EventArgs e)
         {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -6,9 +7,8 @@ namespace Yatzy
 {
     class HumanPanel : GamePanel
     {
-        public HumanPanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore, AutoGame computerGame,
-            GamePanel computerPanel) :
-                base(game, gamerName, checkHiScore, computerGame, computerPanel)
+        public HumanPanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore) :
+                base(game, gamerName, checkHiScore)
         {
         }
 
@@ -93,5 +93,58 @@ namespace Yatzy
                 nameLabel.Text = gamerName = collectPlayerName.UserName;
             }
         }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            if (!Touchy)
+                TouchOrClick(e);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            if (Touchy)
+                TouchOrClick(e);
+        }
+
+        private void TouchOrClick(MouseEventArgs e)
+        {
+            var SaveTargetDie = TargetDie;
+            TargetDie = -1;
+
+            if (e.Y > DieSize)
+                return;
+            var dieClicked = e.X / (DieSize + DieDist);
+
+            if (dieClicked >= Game.Dice)
+                return;
+
+            if (RollCounter == 0)
+                return;
+
+            if (RollCounter >= 3 && Game.SavedRolls == 0)
+                return;
+
+            var SameDie = SaveTargetDie == dieClicked;
+            TargetDie = dieClicked;
+            if (Touchy && SameDie)
+                return;
+            var ThisDieMustRoll = DiceRoll[dieClicked] == GameForm.RollState.RollMe;
+
+            DiceRoll[dieClicked] = ThisDieMustRoll ? GameForm.RollState.HoldMe : GameForm.RollState.RollMe;
+
+            using (var g = Graphics.FromHwnd(Handle))
+            {
+                DrawDie(g, dieClicked, DiceVec[dieClicked],
+                    ThisDieMustRoll ? DieColor : Color.Black);
+
+                ShowSavedRolls(g);
+            }
+
+            UpdateTerningeKast();
+        }
+
+
+
+
     }
 }

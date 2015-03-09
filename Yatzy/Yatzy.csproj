@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Balut.cs" />
     <Compile Include="CalculateNodes.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -73,6 +74,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Main.cs" />
+    <Compile Include="Maxiyatzy.cs" />
     <Compile Include="PlayerName.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -87,6 +89,8 @@
       <DependentUpon>ScoreView.cs</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
+    <Compile Include="Yahtzee.cs" />
+    <Compile Include="Yatzy.cs" />
     <EmbeddedResource Include="CalculateNodes.resx">
       <DependentUpon>CalculateNodes.cs</DependentUpon>
     </EmbeddedResource>
@@ -127,12 +131,9 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <None Include="Scores.xsd">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="Scores.xsd" />
     <None Include="Scores.xsx">
       <DependentUpon>Scores.xsd</DependentUpon>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Yahtzee.tbl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

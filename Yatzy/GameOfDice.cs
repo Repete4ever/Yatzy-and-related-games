@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 
@@ -9,29 +10,34 @@ namespace Yatzy
     /// GameOfDice is a generic dice game that could evolve into Yahtzee or Yatzy
     /// Yes, even Maxiyatzy with its notion of saved rolls
     /// And sideways into Balut - a destilled version of Yatzy in which all items
-    /// carry bonuspoints. Each item must be scored four times
+    ///   carry bonuspoints. Each item must be scored four times
     /// </summary>
     public abstract class GameOfDice
     {
-        protected int myDice;
-        protected int[] DiceVec;
+        private int myDice;
         protected int[] pts;
-        protected int myMaxItem;
+        /// <summary>
+        /// 100 means that this is the best score available 
+        /// e.g. 20 for 'stor' in Yatzy yields 100 while 20 for '4 ens' yields 20*100/24
+        /// </summary>
+        protected int[] pct;
+
+        private int myMaxItem;
         protected int myPoints;
         protected int myHighPoints;
-        protected int PotentialHighPoints; // 105 for Yatzy, 126 for Maxiyatzy
-        protected int BonusThreshold;
-        protected int myPotentialHighPoints;
-        protected int myBonus;
-        protected int mySavedRolls;
+        private int PotentialHighPoints; // 105 for Yatzy/Yahtzee, 126 for Maxiyatzy
+        private int BonusThreshold;      //  63 for Yatzy/Yahtzee,  84 for Maxiyatzy
+        private int myPotentialHighPoints;
+        private int myBonus;
+        private int mySavedRolls;
 
         protected const string Hyphen = "\u2014"; // better than "--";
 
-        public void InitGameOfDice(int Die, int items, int Bon)
+        protected void InitGameOfDice(int Die, int items, int Bon)
         {
             myDice = Die;
-            DiceVec = new int[Die];
             pts = new int[items];
+            pct = new int[items];
             myMaxItem = items;
             myBonus = Bon;
             mySavedRolls = 0;
@@ -45,7 +51,7 @@ namespace Yatzy
             get { return myDice; }
         }
 
-        public virtual int GamePoints
+        public int GamePoints
         {
             get { return myPoints; }
         }
@@ -70,7 +76,7 @@ namespace Yatzy
             get { return MaxRound; }
         }
 
-        public virtual int GameNodes
+        protected virtual int GameNodes
         {   // simple when an item may only be used once (and bonus is ignored)
             // Balut must override (even when bonuses are ignored!)
             get { return (1 << UsableItems) - 1; }
@@ -91,29 +97,24 @@ namespace Yatzy
             get { return 1; } // fits xxYaxx games
         }
 
-        public virtual int SumItems
+        protected virtual int SumItems
         {
             get { return 1; } // covers xxYaxx but not Balut
         }
 
-        public virtual bool IsASumItem(int item, int j)
+        protected virtual bool IsASumItem(int item, int j)
         {
             return false;
         }
 
-        public virtual int BonusItems
+        protected virtual int BonusItems
         {
             get { return 1; } // covers xxYaxx but not Balut
         }
 
-        public virtual bool IsABonusItem(int item, int j)
+        protected virtual bool IsABonusItem(int item, int j)
         {
             return false;
-        }
-
-        public virtual int MaxRow
-        {
-            get { return MaxItem; }
         }
 
         public virtual int MaxTotalItem
@@ -160,12 +161,11 @@ namespace Yatzy
 
         protected abstract void MyPoints(int[] nw);
 
-        public void points(int[] nw)
+        protected void points(int[] nw)
         {
             // repackage a roll so the number of ones, twos, etc. are computed
             // we map nw[Dice] onto nx[6]
             int[] nx = new int[6];
-            for (int i = 0; i < 6; i++) nx[i] = 0;
             for (int idie = 0; idie < Dice; idie++)
             {
                 nx[nw[idie] - 1]++;
@@ -174,7 +174,7 @@ namespace Yatzy
             MyPoints(nx);
         }
 
-        public virtual string Bonus(int i) // takes care of xxYaxx
+        protected virtual string Bonus(int i) // takes care of xxYaxx
         {
             if (myHighPoints >= BonusThreshold)
                 return "" + myBonus;
@@ -187,11 +187,19 @@ namespace Yatzy
         {
         }
 
+        protected virtual int TotalPoints()
+        {
+            return myPoints + (myHighPoints >= BonusThreshold ? myBonus : 0);
+        }
+
         public virtual string ScoreIt(int[] nw, int i, int j, int roll)
         {
-            if (IsASumItem(i, j)) return "" + myHighPoints;
-            if (IsABonusItem(i, j)) return Bonus(i);
-            if (i > MaxItem + SumItems + BonusItems) return "" + myPoints;
+            if (IsASumItem(i, j)) 
+                return "" + myHighPoints;
+            if (IsABonusItem(i, j)) 
+                return Bonus(i);
+            if (i > MaxItem + SumItems + BonusItems)
+                return "" + TotalPoints();
 
             points(nw);
 
@@ -210,9 +218,12 @@ namespace Yatzy
 
         public virtual string UnScoreIt(int[] nw, int i, int j, int roll)
         {
-            if (IsASumItem(i, j)) return "" + myHighPoints;
-            if (IsABonusItem(i, j)) return Bonus(i);
-            if (i > MaxItem + SumItems + BonusItems) return "" + myPoints;
+            if (IsASumItem(i, j)) 
+                return "" + myHighPoints;
+            if (IsABonusItem(i, j)) 
+                return Bonus(i);
+            if (i > MaxItem + SumItems + BonusItems)
+                return "" + TotalPoints();
 
             points(nw);
 
@@ -233,13 +244,26 @@ namespace Yatzy
         {
             int d = nw.Sum();
             if (d == 0)
-                return 0;
+                return 0; // no "real" values in nw, just exit
             if (d < Dice)
                 throw new ArgumentException("Not a proper roll");
 
             points(nw);
 
             return i < pts.Length ? pts[i] : 0;
+        }
+
+        public int GradeIt(int[] nw, int i)
+        {
+            int d = nw.Sum();
+            if (d == 0)
+                return 0; // no "real" values in nw, just exit
+            if (d < Dice)
+                throw new ArgumentException("Not a proper roll");
+
+            points(nw);
+
+            return i < pct.Length ? pct[i] : 0;
         }
 
         public enum Language { Danish, Swedish, English };
@@ -292,8 +316,8 @@ namespace Yatzy
     {
         /// abstract class to add a game plan to games played with five dice, e.g. Yatzy
         /// 
+        public static readonly bool varians = true; // set to false to ease overhead added by computing (quasi-optimal) game plan
 
-        public bool varians = true; // set to false to ease overhead added by computing (quasi-optimal) game plan
         public double[] expect;
         public double[] vari;
         private readonly double[,] varia = new double[462, 3];
@@ -451,9 +475,20 @@ namespace Yatzy
         protected abstract int SubNode(int Node, int Item, int SubItem);
         public abstract int ActiveItem(int Node, int item);
 
+        /// <summary>
+        /// Find R1 strategy by dynamic programming
+        /// R1 is maximizing points score. R2 is the more advanced maximing chance to win
+        /// </summary>
+        /// <param name="LevelOfAnalysis">Analyze the whole game or a subgame</param>
+        /// <param name="NewDice">the roll</param>
+        /// <param name="UnusedI">unused scores (subgame only)</param>
+        /// <param name="NodeNo">subgame node</param>
+        /// <param name="ActiveI">scores in play</param>
+        /// <param name="PointsToWin">end game scenario</param>
         public void GamePlan(int LevelOfAnalysis, int[] NewDice,
             int[,] UnusedI, int NodeNo, int ActiveI, int PointsToWin)
         {
+            Contract.Assert(LevelOfAnalysis == 6 || LevelOfAnalysis == 3);
             int[] n = new int[6];
             int loop;
             int ja, index;
@@ -784,938 +819,4 @@ namespace Yatzy
 
         }
     }
-
-    public class Yatzy : FiveDice
-    {
-        public Yatzy()
-        {
-            InitGameOfDice(5, 15, 50);
-        }
-
-        public override string ToString()
-        {
-            return "Yatzy";
-        }
-
-        readonly string[,] Items = {
-							{"ENERE","ETTOR","1's"},
-							{"TOERE","TVÅOR","2's"},
-							{"TREERE","TREOR","3's"},
-							{"FIRERE","FYROR","4's"},
-							{"FEMMERE","FEMMOR","5's"},
-							{"SEKSERE","SEXOR","6's"},
-							{"1 PAR","ETT PAR","1 pair"},
-							{"2 PAR","TVÅ PAR","2 pairs"},
-							{"3 ENS","TRETAL","3 of a kind"},
-							{"4 ENS","FYRTAL","4 of a kind"},
-							{"LILLE","LITEN STRAIGHT","Sm straight"},
-							{"STOR","STOR STRAIGHT","Lg straight"},
-							{"HUS","KÅK","House"},
-							{"CHANCE","CHANS","Chance"},
-							{"YATZY","YATZY","Yatzy"},
-							{"SUM","SUMMA","Sum"},
-							{"BONUS","BONUS","Bonus"},
-							{"TOTAL","SUMMA","Total"}
-						  };
-
-        public override string ItemText(int item)
-        {
-            return Items[item, ChosenLanguage];
-        }
-
-        public override int MaxGroup
-        {
-            get { return 2; } // makes layout look nice
-        }
-
-        public override int MaxRow
-        {
-            get { return Math.Max(6 + 2, MaxItem - 6 + 2); }
-        }
-
-        public override bool IsASumItem(int item, int j)
-        {
-            return item == MaxItem + 1;
-        }
-
-        public override bool IsABonusItem(int item, int j)
-        {
-            return item == MaxItem + 2;
-        }
-
-        public override int PreferredRow(int item)
-        {
-            if (IsASumItem(item, 0))
-                return item - 9; // sum of items 1-6
-            if (IsABonusItem(item, 0))
-                return item - 9; // bonus
-            if (item > MaxItem + SumItems + BonusItems)
-                return 9; // sum total
-            if (item < 6)
-                return item;
-            return item - 6;
-        }
-
-        public override int SavedRolls
-        {
-            get { return 0; } // the notion of saved rolls doesn't exist
-        }
-
-        protected override int SubNode(int Node, int item, int SubItem)
-        {
-            return Node - (1 << item);
-        }
-
-        public override int ActiveItem(int Node, int item)
-        {
-            return (Node >> item) % 2; // return bit number 'item' of Node
-        }
-
-        protected override void MyPoints(int[] nx)
-        {
-            int par = 5 + 1;
-            int topar = par + 1;
-            int treens = topar + 1;
-            int fireens = treens + 1;
-            int lille = fireens + 1;
-            int stor = lille + 1;
-            int hus = stor + 1;
-            int chance = hus + 1;
-            int yatzy_ = chance + 1;
-
-            int maks = 0, isum = 0;
-            int ih = 0;
-
-            for (int i = 6; i <= MaxItem; i++) pts[i] = 0;
-            for (int j = 6; j >= 1; j--)
-            {
-                var iv = nx[j - 1];
-                pts[j - 1] = iv * j;
-                isum += iv * j;
-                if (iv > maks)
-                {
-                    maks = iv;
-                    ih = j;
-                }
-            }
-            pts[chance] = isum;
-            switch (maks)
-            {
-                case 1:
-                    if (isum == 15) pts[lille] = 15;
-                    if (isum == 20) pts[stor] = 20;
-                    return;
-                case 2:
-                    pts[par] = ih * 2;
-                    if (ih == 1) return;
-                    for (int i = 1; i < ih; i++) if (nx[i - 1] == 2) pts[topar] = (i + ih) * 2;
-                    return;
-                case 3:
-                    pts[par] = ih * 2;
-                    pts[treens] = ih * 3;
-                    for (int i = 1; i <= 6; i++)
-                    {
-                        if (nx[i - 1] == 2)
-                        {
-                            pts[hus] = ih * 3 + i * 2;
-                            pts[topar] = (ih + i) * 2;
-                            if (i > ih) pts[par] = i * 2;
-                            return;
-                        }
-                    }
-                    return;
-                case 5:
-                    pts[yatzy_] = 50;
-                    pts[par] = ih * 2;
-                    pts[treens] = ih * 3;
-                    pts[fireens] = ih * 4;
-                    return;
-                case 4:
-                    pts[par] = ih * 2;
-                    pts[treens] = ih * 3;
-                    pts[fireens] = ih * 4;
-                    return;
-            }
-
-        }
-
-    }
-
-    public class Yahtzee : FiveDice
-    {
-        public Yahtzee()
-        {
-            InitGameOfDice(5, 13, 35);
-        }
-
-        public override string ToString()
-        {
-            return "Yahtzee";
-        }
-
-        readonly string[,] Items = {
-							{"ENERE","ETTOR","1's"},
-							{"TOERE","TVÅOR","2's"},
-							{"TREERE","TREOR","3's"},
-							{"FIRERE","FYROR","4's"},
-							{"FEMMERE","FEMMOR","5's"},
-							{"SEKSERE","SEXOR","6's"},
-							{"3 ens","Tretal","3 of a kind"},
-							{"4 ens","Fyrtal","4 of a kind"},
-							{"Hus","Kåk","House"},
-							{"Lille","Liten straight","Sm straight"},
-							{"Stor","Stor straight","Lg straight"},
-							{"YAHTZEE","YAHTZEE","Yahtzee"},
-							{"Chance","Chans","Chance"},
-							{"SUM","SUMMA","Sum"},
-							{"BONUS","BONUS","Bonus"},
-							{"TOTAL","SUMMA","Total"}
-						  };
-
-        public override string ItemText(int item)
-        {
-            return Items[item, ChosenLanguage];
-        }
-
-        public override int SavedRolls
-        {
-            get { return 0; } // the notion of saved rolls doesn't exist
-        }
-        public override int MaxGroup
-        {
-            get { return 2; } // makes layout look nice
-        }
-
-        public override int MaxRow
-        {
-            get { return Math.Max(6 + 2, MaxItem - 6 + 2); }
-        }
-
-        public override bool IsASumItem(int item, int j)
-        {
-            return item == MaxItem + 1;
-        }
-
-        public override bool IsABonusItem(int item, int j)
-        {
-            return item == MaxItem + 2;
-        }
-
-        public override int PreferredRow(int item)
-        {
-            if (IsASumItem(item, 0))
-                return item - 7; // sum of items 1-6
-            if (IsABonusItem(item, 0))
-                return item - 7; // bonus
-            if (item > MaxItem + SumItems + BonusItems)
-                return 7; // sum total
-            if (item < 6)
-                return item;
-            return item - 6;
-        }
-
-        protected override int SubNode(int Node, int item, int SubItem)
-        {
-            return Node - (1 << item);
-        }
-
-        public override int ActiveItem(int Node, int item)
-        {
-            return (Node >> item) % 2; // return bit number 'item' of Node
-        }
-
-        protected override void MyPoints(int[] nx)
-        {
-            int maks = 0, isum = 0, j;
-
-            int three_of_a_kind = 5 + 1;
-            int four_of_a_kind = three_of_a_kind + 1;
-            int house = four_of_a_kind + 1;
-            int small = house + 1;
-            int large = small + 1;
-            int yahtzee = large + 1;
-            int chance = yahtzee + 1;
-
-            for (int i = 6; i <= MaxItem; i++) pts[i] = 0;
-            for (j = 6; j >= 1; j--)
-            {
-                var iv = nx[j - 1];
-                pts[j - 1] = iv * j;
-                isum += iv * j;
-                if (iv > maks)
-                {
-                    maks = iv;
-                }
-            }
-            pts[chance] = isum;
-            switch (maks)
-            {
-                case 1:
-                case 2:
-                    int ih = Math.Min(1, nx[0] * nx[1] * nx[2]) + Math.Min(1, nx[1] * nx[2]) + Math.Min(1, nx[2]) +
-                           Math.Min(1, nx[3] * nx[4] * nx[5]) + Math.Min(1, nx[3] * nx[4]) + Math.Min(1, nx[3]);
-                    if (ih >= 4) pts[small] = 30;
-                    if (ih == 5) pts[large] = 40;
-                    return;
-                case 3:
-                    pts[three_of_a_kind] = isum;
-                    for (int i = 0; i < 6; i++)
-                        if (nx[i] == 2) pts[house] = 25;
-                    return;
-                case 5:
-                    pts[yahtzee] = 50;
-                    pts[house] = 25;
-                    pts[three_of_a_kind] = isum;
-                    pts[four_of_a_kind] = isum;
-                    return;
-                case 4:
-                    pts[three_of_a_kind] = isum;
-                    pts[four_of_a_kind] = isum;
-                    return;
-            }
-        }
-
-    }
-    public class Maxiyatzy : GameOfDice
-    {
-        public Maxiyatzy()
-        {
-            InitGameOfDice(6, 20, 100);
-        }
-
-        public override string ToString()
-        {
-            return "Maxiyatzy";
-        }
-
-        readonly string[,] Items = {
-							{"ENERE","ETTOR","1's"},
-							{"TOERE","TVÅOR","2's"},
-							{"TREERE","TREOR","3's"},
-							{"FIRERE","FYROR","4's"},
-							{"FEMMERE","FEMMOR","5's"},
-							{"SEKSERE","SEXOR","6's"},
-							{"1 PAR","ETT PAR","1 pair"},
-							{"2 PAR","TVÅ PAR","2 pairs"},
-							{"3 PAR","TRE PAR","3 pairs"},
-							{"3 ENS","TRETAL","3 of a kind"},
-							{"4 ENS","FYRTAL","4 of a kind"},
-							{"5 ENS","FEMTAL","5 of a kind"},
-							{"YATZY!","YATZY!","Yatzy!"},
-							{"Lille","Liten straight","Small straight"},
-							{"Stor","Stor straight","Large straight"},
-							{"Full straight","Full Straight","Full straight"},
-							{"Hus","Kåk","House"},
-							{"Stort Hus","Hus","Full House"},
-							{"Tårn","Torn","Tower"},
-							{"Chance","Chans","Chance"},
-							{"SUM","SUMMA","Sum"},
-							{"BONUS","BONUS","Bonus"},
-							{"TOTAL","SUMMA","Total"}
-							 };
-
-        public override string ItemText(int item)
-        {
-            return Items[item, ChosenLanguage];
-        }
-
-        public override int MaxGroup
-        {
-            get { return 3; } // makes layout look nice
-        }
-
-        public override int MaxRow
-        {
-            get { return 8; }
-        }
-
-        public override bool IsASumItem(int item, int j)
-        {
-            return item == MaxItem + 1;
-        }
-
-        public override bool IsABonusItem(int item, int j)
-        {
-            return item == MaxItem + 2;
-        }
-
-        public override int PreferredRow(int item)
-        {
-            if (IsASumItem(item, 0))
-                return item - 14; // sum of items 1-6
-            if (IsABonusItem(item, 0))
-                return item - 14; // bonus
-            if (item > MaxItem + SumItems + BonusItems)
-                return 7; // sum total
-            if (item < 6)
-                return item;
-            if (item < 13)
-                return item - 6;
-            return item - 13;
-        }
-
-        public override int PreferredGroup(int item)
-        {
-            if (item < 6 || IsASumItem(item, 0) || IsABonusItem(item, 0))
-                return 1;
-            if (item < 13)
-                return 2;
-            return MaxGroup;
-        }
-
-        protected override void MyPoints(int[] nx)
-        {
-            int par = 5 + 1;
-            int topar = par + 1;
-            int trepar = topar + 1;
-            int treens = trepar + 1;
-            int fireens = treens + 1;
-            int femens = fireens + 1;
-            int yatzy_ = femens + 1;
-            int lille = yatzy_ + 1;
-            int stor = lille + 1;
-            int fuldstraight = stor + 1;
-            int hus = fuldstraight + 1;
-            int fuldthus = hus + 1;
-            int tower = fuldthus + 1;
-            int chance = tower + 1;
-
-            int maks = 0, isum = 0, j;
-            int ih = 0;
-            int i;
-
-            for (i = 6; i <= MaxItem; i++) pts[i] = 0;
-            for (j = 6; j >= 1; j--)
-            {
-                int iv = nx[j - 1];
-                pts[j - 1] = iv * j;
-                isum += iv * j;
-                if (iv > maks)
-                {
-                    maks = iv;
-                    ih = j;
-                }
-            }
-            pts[chance] = isum;
-            switch (maks)
-            {
-                case 1:
-                    pts[fuldstraight] = isum;
-                    pts[lille] = 15;
-                    pts[stor] = 20;
-                    return;
-                case 2:
-                    pts[lille] = 15;
-                    for (i = 1; i < 6; i++)
-                        if (nx[i - 1] == 0)
-                            pts[lille] = 0;
-                    pts[stor] = 20;
-                    for (i = 2; i <= 6; i++)
-                        if (nx[i - 1] == 0)
-                            pts[stor] = 0;
-                    pts[par] = ih * 2;
-                    // is there another pair?
-                    for (i = 1; i < ih; i++)
-                        if (nx[i - 1] == 2)
-                        {
-                            pts[topar] = (i + ih) * 2;
-                            // and a third pair?
-                            for (j = i - 1; j > 0; j--)
-                                if (nx[j - 1] == 2)
-                                    pts[trepar] = (i + j + ih) * 2;
-                        }
-                    return;
-                case 3:
-                    pts[par] = ih * 2;
-                    pts[treens] = ih * 3;
-                    for (i = 1; i <= 6; i++)
-                    {
-                        if (nx[i - 1] == 2)
-                        {
-                            pts[hus] = ih * 3 + i * 2;
-                            pts[topar] = (ih + i) * 2;
-                            if (i > ih) pts[par] = i * 2;
-                            return;
-                        }
-                    }
-                    for (i = 1; i < ih; i++)
-                        if (nx[i - 1] == 3) // two threes
-                        {
-                            pts[hus] = ih * 3 + i * 2;
-                            pts[fuldthus] = isum;
-                            pts[topar] = (ih + i) * 2;
-                            return;
-                        }
-                    return;
-                case 4:
-                    pts[par] = ih * 2;
-                    pts[treens] = ih * 3;
-                    pts[fireens] = ih * 4;
-                    for (i = 1; i <= 6; i++)
-                        if (nx[i - 1] == 2)
-                        {
-                            pts[tower] = isum;
-                            pts[hus] = ih * 3 + i * 2;
-                            pts[topar] = ih * 2 + i * 2;
-                            if (i > ih)
-                                pts[par] = i * 2;
-                        }
-                    return;
-                case 5:
-                    pts[par] = ih * 2;
-                    pts[treens] = ih * 3;
-                    pts[fireens] = ih * 4;
-                    pts[femens] = ih * 5;
-                    return;
-                case 6:
-                    pts[par] = ih * 2;
-                    pts[treens] = ih * 3;
-                    pts[fireens] = ih * 4;
-                    pts[femens] = ih * 5;
-                    pts[yatzy_] = 100;
-                    return;
-            }
-        }
-
-    }
-
-    public class Balut : FiveDice
-    {
-
-        protected int[] Points = { 0, 0, 0, 0, 0, 0, 0, 0 };
-        protected int myPotentialFours, myPotentialFives, myPotentialSixes;
-        protected int myChoice, myPotentialChoice;
-        protected bool myStraightBonus = true, myFullHouseBonus = true;
-        protected int FullHouseFill, StraightFill;
-        protected int BalutCounter;
-        protected bool[] Straights = { true, true, true, true };
-        protected bool[] Houses = { true, true, true, true };
-
-        public Balut()
-        {
-            InitGameOfDice(5, 9, 2);
-            myPotentialFours = 4 * 4 * Dice;
-            myPotentialFives = 5 * 4 * Dice;
-            myPotentialSixes = 6 * 4 * Dice;
-            myPotentialChoice = myPotentialSixes;
-        }
-
-        public override string ToString()
-        {
-            return "Balut";
-        }
-
-        public override int ScoreBoxesPerItem
-        {
-            get { return 6; }
-        }
-
-        public override int UsableScoreBoxesPerItem
-        {
-            get { return 4; }
-        }
-
-        public override int UsableItems
-        {
-            get { return 7; }
-        }
-
-        public override int GameNodes
-        {   // enumerate from end game = 0000000 to 
-            // beginning = 4444444 (Note: numbers have a radix of 5)
-            get { return power(UsableScoreBoxesPerItem + 1, UsableItems) - 1; }
-        }
-
-        protected override int SubNode(int Node, int Item, int SubItem)
-        {
-            // ReSharper disable once UnusedVariable
-            string Base5 = MyItoa(Node, 5); // for debug purposes
-            Node -= power(5, Item); // reduce the Item by 1
-            if (Node < 1)
-                throw new Exception("Underflow in SubNode");
-            return Node;
-        }
-
-        public override int ActiveItem(int Node, int item)
-        {
-            String Base5 = MyItoa(Node, 5);
-            int Index = Base5.Length - item - 1;
-            if (Index < 0)
-                return 0;
-            char x = Base5[Index];
-            return x - '0';
-        }
-
-        public override int MaxRound
-        {
-            get { return UsableItems * UsableScoreBoxesPerItem; }
-        }
-
-        public override int SumItems
-        {
-            get { return 7; }
-        }
-
-        public override int BonusItems
-        {
-            get { return 8; }
-        }
-
-        public override bool IsASumItem(int item, int j)
-        {
-            return j == 4;
-        }
-
-        public override bool IsABonusItem(int item, int j)
-        {
-            return j == 5;
-        }
-
-        public override int MaxRow
-        {
-            get { return 9; } // because even the total scores points
-        }
-
-        public override int MaxTotalItem
-        {
-            get { return MaxItem; }
-        }
-
-        public override int FirstScoreBox(int row)
-        {
-            switch (row)
-            {
-                default:
-                    return 0;
-                case 7:
-                    return 4; // only sums
-                case 8:
-                    return 5; // total points
-            }
-        }
-
-        public override int PreferredRow(int item)
-        {
-            return item;
-        }
-
-        public override int PreferredGroup(int item)
-        {
-            return 1;
-        }
-
-        public override int SavedRolls
-        {
-            get { return 0; }
-        }
-
-        readonly string[,] Items = {
-							{"Firere","Fyror","Fours"},
-							{"Femmere","Femmor","Fives"},
-							{"Seksere","Sexor","Sixes"},
-							{"Straight","Straight","Straight"},
-							{"Hus","Kåk","Full House"},
-							{"Chance","Chans","Choice"},
-							{"Balut","Balut","Balut"},
-							{"Total","Total","Total"},
-							{"Total Point","Total Point","Total Point"}
-		};
-
-        public override string ItemText(int item)
-        {
-            return Items[item, ChosenLanguage];
-        }
-
-        enum balut { firere, femmere, seksere, straight, hus, chance, balut_, total };
-
-        protected override void MyPoints(int[] nx)
-        {
-            int maks = 0, isum = 0;
-            int ih = 0;
-            int i;
-
-            for (i = 0; i <= MaxItem; i++) pts[i] = 0;
-            for (i = 6; i > 0; i--)
-            {
-                var iv = nx[i - 1];
-                if (i >= 4)
-                {
-                    pts[i - 4] = iv * i;
-                }
-                isum += iv * i;
-                if (iv > maks)
-                {
-                    maks = iv;
-                    ih = i;
-                }
-            }
-
-            pts[(int)balut.chance] = isum;
-            switch (maks)
-            {
-                case 1:
-                    if (isum == 15) pts[(int)balut.straight] = 15;
-                    if (isum == 20) pts[(int)balut.straight] = 20;
-                    return;
-                case 2:
-                case 4:
-                    return;
-                case 3:
-                    for (i = 1; i <= 6; i++)
-                    {
-                        if (nx[i - 1] == 2)
-                        {
-                            pts[(int)balut.hus] = ih * 3 + i * 2;
-                            return;
-                        }
-                    }
-                    return;
-                case 5:
-                    pts[(int)balut.balut_] = ih * 5 + 20;
-                    return;
-            }
-
-        }
-
-        protected int[] BonusArr = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
-        // Balut scoring is a two-tounged matter, if two gamers get the same amount the gamepoints decide
-        public override int BonusPoints
-        {
-            get
-            {
-                return BonusArr.Sum();
-            }
-        }
-
-        public override string Bonus(int i)
-        {
-            int Threshold = (3 * UsableScoreBoxesPerItem + 1) * (i + 4);
-            switch (i)
-            {
-                case 0:
-                    if (Points[i] >= Threshold)
-                    {
-                        BonusArr[i] = 2;
-                        return "2";
-                    }
-                    BonusArr[i] = 0;
-                    if (myPotentialFours < Threshold)
-                        return Hyphen;
-                    break;
-                case 1:
-                    if (Points[i] >= Threshold)
-                    {
-                        BonusArr[i] = 2;
-                        return "2";
-                    }
-                    BonusArr[i] = 0;
-                    if (myPotentialFives < Threshold)
-                        return Hyphen;
-                    break;
-                case 2:
-                    if (Points[i] >= Threshold)
-                    {
-                        BonusArr[i] = 2;
-                        return "2";
-                    }
-                    BonusArr[i] = 0;
-                    if (myPotentialSixes < Threshold)
-                        return Hyphen;
-                    break;
-                case 3:
-                    BonusArr[i] = 0;
-                    if (!myStraightBonus)
-                        return Hyphen;
-                    if (StraightFill == UsableScoreBoxesPerItem)
-                    {
-                        BonusArr[i] = 4;
-                        return "4";
-                    }
-                    break;
-                case 4:
-                    BonusArr[i] = 0;
-                    if (!myFullHouseBonus)
-                        return Hyphen;
-                    if (FullHouseFill == UsableScoreBoxesPerItem)
-                    {
-                        BonusArr[i] = 3;
-                        return "3";
-                    }
-                    break;
-                case 5:
-                    if (myChoice >= UsableScoreBoxesPerItem * 25)
-                    {
-                        BonusArr[i] = 2;
-                        return "2";
-                    }
-                    BonusArr[i] = 0;
-                    if (myPotentialChoice < UsableScoreBoxesPerItem * 25)
-                        return Hyphen;
-                    break;
-                case 6:
-                    BonusArr[i] = BalutCounter * 2;
-                    return "" + BonusArr[i];
-                case 7:
-                    Points[i] = myPoints;
-                    BonusArr[i] = Math.Min(6, Math.Max(myPoints / 50 - 7, -2));
-                    return "" + BonusArr[i];
-                case 8:
-                    return "" + BonusPoints;
-                default:
-                    return "?" + i;
-            }
-            return "";
-        }
-
-        public override string ScoreIt(int[] nw, int i, int j, int roll)
-        {
-            if (IsASumItem(i, j))
-                return "" + Points[i];
-            if (IsABonusItem(i, j))
-                return Bonus(i);
-
-            points(nw);
-
-            int p = pts[i];
-            myPoints += p;
-
-            switch (i)
-            {
-                case 0:
-                    myPotentialFours -= (i + 4) * Dice - p;
-                    Points[i] += p;
-                    break;
-                case 1:
-                    myPotentialFives -= (i + 4) * Dice - p;
-                    Points[i] += p;
-                    break;
-                case 2:
-                    myPotentialSixes -= (i + 4) * Dice - p;
-                    Points[i] += p;
-                    break;
-                case 3:
-                    myStraightBonus &= p > 0;
-                    Points[i] += p;
-                    Straights[j] = p > 0;
-                    StraightFill++;
-                    break;
-                case 4:
-                    myFullHouseBonus &= p > 0;
-                    Points[i] += p;
-                    Houses[j] = p > 0;
-                    FullHouseFill++;
-                    break;
-                case 5:
-                    myChoice += p;
-                    Points[i] += p;
-                    myPotentialChoice -= 6 * Dice - p;
-                    break;
-                case 6:
-                    if (p > 0)
-                        BalutCounter++;
-                    Points[i] += p;
-                    break;
-            }
-            return "" + (p > 0 ? "" + p : Hyphen);
-        }
-
-        public override string UnScoreIt(int[] nw, int i, int j, int roll)
-        {
-            if (IsASumItem(i, j))
-                return "" + Points[i];
-            if (IsABonusItem(i, j))
-                return Bonus(i);
-
-            points(nw);
-
-            int p = pts[i];
-            myPoints -= p;
-
-            switch (i)
-            {
-                case 0:
-                    myPotentialFours += (i + 4) * Dice - p;
-                    Points[i] -= p;
-                    break;
-                case 1:
-                    myPotentialFives += (i + 4) * Dice - p;
-                    Points[i] -= p;
-                    break;
-                case 2:
-                    myPotentialSixes += (i + 4) * Dice - p;
-                    Points[i] -= p;
-                    break;
-                case 3:
-                    myStraightBonus = true;
-                    Points[i] -= p;
-                    Straights[j] = true;
-                    foreach (bool b in Straights)
-                        myStraightBonus &= b;
-                    StraightFill--;
-                    break;
-                case 4:
-                    myFullHouseBonus = true;
-                    Points[i] -= p;
-                    Houses[j] = true;
-                    foreach (bool b in Houses)
-                        myFullHouseBonus &= b;
-                    FullHouseFill--;
-                    break;
-                case 5:
-                    myChoice -= p;
-                    Points[i] -= p;
-                    myPotentialChoice += 6 * Dice - p;
-                    break;
-                case 6:
-                    if (p > 0)
-                        BalutCounter--;
-                    Points[i] -= p;
-                    break;
-            }
-            return "";
-        }
-
-        public override int ValueIt(int[] nw, int i)
-        {
-            foreach (int di in nw)
-            { // check for die with six sides
-                if (di < 1)
-                    return 0; // can't be a proper roll of a die
-                if (di > 6)
-                    throw new ArgumentException("OVFL"); // can't be a proper roll of a six-sided die
-            }
-
-            points(nw);
-
-            return pts[i];
-        }
-
-        public override void NewGame()
-        {
-            myPoints = 0;
-            myHighPoints = 0;
-            //myBonusPoints = 0;
-            myPotentialFours = 4 * 4 * Dice;
-            myPotentialFives = 5 * 4 * Dice;
-            myPotentialSixes = 6 * 4 * Dice;
-            myPotentialChoice = myPotentialSixes;
-            myStraightBonus = true;
-            StraightFill = 0;
-            myFullHouseBonus = true;
-            FullHouseFill = 0;
-            myChoice = 0;
-            BalutCounter = 0;
-            for (int i = 0; i < BonusArr.Length; i++)
-                BonusArr[i] = 0;
-            for (int i = 0; i < Points.Length; i++)
-                Points[i] = 0;
-            for (int i = 0; i < Straights.Length; i++)
-                Straights[i] = true;
-            for (int i = 0; i < Houses.Length; i++)
-                Houses[i] = true;
-        }
-
-    }
-
 }
