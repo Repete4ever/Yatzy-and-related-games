@@ -76,9 +76,9 @@
 
         #endregion
 
-        protected System.Windows.Forms.Button StartAgain;
         private System.Windows.Forms.Timer timer1;
         protected System.Windows.Forms.Label nameLabel;
+        public System.Windows.Forms.Button StartAgain;
         public System.Windows.Forms.Button TerningeKast;
     }
 }

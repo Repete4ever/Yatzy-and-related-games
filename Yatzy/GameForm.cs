@@ -11,8 +11,9 @@ namespace Yatzy
 {
     public partial class GameForm : Form
     {
-        public const string RegFolder = @"Software\PHDGames\";
+        public static string RegFolder = Path.Combine("Software", Settings.Default.Repository);
         private const string ScoresFileName = "Scores.xml";
+        public const string MatchesFileName = "Scores.json";
 
         private ScoreView _score;
         private int ChosenLanguage = CollectLanguage();
@@ -30,7 +31,7 @@ namespace Yatzy
             gameSizes.Add("Balut", new Size(602, 432));
 
             string folder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            _gamesFolder = Path.Combine(folder, "PHDGames");
+            _gamesFolder = Path.Combine(folder, Settings.Default.Repository);
             if (!Directory.Exists(_gamesFolder))
             {
                 Directory.CreateDirectory(_gamesFolder);
@@ -42,6 +43,12 @@ namespace Yatzy
                 const string styleSheet = "Scores.xslt";
                 File.Copy(styleSheet, Path.Combine(_gamesFolder, styleSheet));
             }
+            string matchFile = Path.Combine(_gamesFolder, MatchesFileName);
+            if (!File.Exists(matchFile))
+            {
+                File.Copy(MatchesFileName, matchFile);
+            }
+            GameStats = new GameStats();
             InitForm(CollectGameName());
         }
 
@@ -64,11 +71,11 @@ namespace Yatzy
                 editedScoreTable.Columns.Add("Player", typeof(string));
                 editedScoreTable.Columns.Add("Commenced", typeof(string));
                 editedScoreTable.Columns.Add("Duration", typeof(TimeSpan));
-                editedScoreTable.Columns.Add("Point", typeof(ushort));
                 if (gameText == "Balut")
                 {
                     editedScoreTable.Columns.Add("Bonus", typeof(ushort));
                 }
+                editedScoreTable.Columns.Add("Point", typeof(ushort));
                 foreach (DataRow dr in scoreTable.Rows)
                 {
                     var commenced = dr.Field<string>("Commenced");
@@ -79,8 +86,10 @@ namespace Yatzy
                     if (gameText == "Balut")
                     {
                         var bonus = dr.Field<long>("Bonus");
-                        editedScoreTable.Rows.Add(dr.Field<string>("Player"), started, ts, ToUShort(point),
-                            ToUShort(bonus));
+                        editedScoreTable.Rows.Add(dr.Field<string>("Player"), started, ts, 
+                            ToUShort(bonus),
+                            ToUShort(point)
+                            );
                     }
                     else
                     {
@@ -278,8 +287,8 @@ namespace Yatzy
             _computerPlaysFirst ^= true;
 
             GameOfDice.ChosenLanguage = ChosenLanguage;
-            GamePanel computerPanel = new ComputerPanel(HalGame, CheckHiScore) { DieColor = Color.Blue, };
-            GamePanel humanPanel = new HumanPanel(HumanGame, Player, CheckHiScore) { DieColor = Color.Red };
+            GamePanel computerPanel = new ComputerPanel(HalGame, _computerPlaysFirst ? (GamePanel.CheckHiScore) null : CheckHiScore) { DieColor = Color.Blue, };
+            GamePanel humanPanel = new HumanPanel(HumanGame, Player, _computerPlaysFirst ? CheckHiScore : (GamePanel.CheckHiScore) null) { DieColor = Color.Red };
             computerPanel.OtherPanel = humanPanel;
             humanPanel.OtherPanel = computerPanel;
             scorePanels.Controls.Add(_computerPlaysFirst ? computerPanel : humanPanel, 0, 0);
@@ -287,12 +296,13 @@ namespace Yatzy
 
             Controls.Add(scorePanels);
 
-            //FormTransform.TransformSize(scorePanels, new Size(humanPanel.Width * 2, humanPanel.Height + humanPanel.Top));
             if (_computerPlaysFirst)
             {
                 //AutoGame(computerPanel);
-                humanPanel.TerningeKast.Visible = false;
                 computerPanel.TerningeKast.Visible = true;
+                computerPanel.StartAgain.Visible = true;
+                humanPanel.TerningeKast.Visible = false;
+                humanPanel.StartAgain.Visible = false;
             }
 
             //for (var row = 0; row < HalGame.UsableItems; row++)
@@ -431,7 +441,7 @@ namespace Yatzy
             }
         }
 
-        private static string CollectGameName()
+        public static string CollectGameName()
         {
             return Settings.Default.GameSetting;
         }
@@ -577,7 +587,8 @@ namespace Yatzy
 
         private void OnHiScore(object sender, EventArgs e)
         {
-            ShowHiScore(CollectGameName());
+            //ShowHiScore(CollectGameName());
+            GameStats.ShowMatches(CollectGameName());
         }
 
         private void OnRules(object sender, EventArgs e)
@@ -589,7 +600,7 @@ namespace Yatzy
         {
             MessageBox.Show("PhDGames©\n" +
                             "Created by Peter Hegelund\n" +
-                            "Version 0.7.0.0, Feb 2015\n" +
+                            "Version 0.8.0.0, March 2015\n" +
                             "Programmed in C#", "About " + HumanGame,
                 MessageBoxButtons.OK, MessageBoxIcon.None);
         }
@@ -636,7 +647,8 @@ namespace Yatzy
         }
 
         readonly Dictionary<string, Size> gameSizes = new Dictionary<string, Size>();
-        private string _gamesFolder;
+        private readonly string _gamesFolder;
+        public static GameStats GameStats;
 
         private void GameForm_Load(object sender, EventArgs e)
         {
@@ -664,6 +676,8 @@ namespace Yatzy
 
         private void GameForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            GameStats.SaveMatches();
+
             if ((ModifierKeys & Keys.Shift) == 0)
             {
                 Point location = Location;

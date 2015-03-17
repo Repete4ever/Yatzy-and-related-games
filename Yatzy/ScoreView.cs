@@ -81,7 +81,7 @@ namespace Yatzy
                     size = RestoreBounds.Size;
                 }
                 string initLocation = string.Join(",", location.X, location.Y, size.Width, size.Height);
-                Properties.Settings.Default.InitialLocation = initLocation;
+                Properties.Settings.Default.ScoreLocation = initLocation;
                 Properties.Settings.Default.Save();
             }
             if (_viewClosing != null)

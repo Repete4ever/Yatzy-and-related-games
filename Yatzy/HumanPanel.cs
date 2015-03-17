@@ -28,7 +28,11 @@ namespace Yatzy
             int i, j;
             MyItemCoordinates((Control)sender, out i, out j);
 
-            Rubrik[i, j].Text = Game.ValueIt(DiceVec, i).ToString();
+            TextBox textBox = Rubrik[i, j];
+            if (textBox != null)
+            {
+                textBox.Text = Game.ValueIt(DiceVec, i).ToString();
+            }
             Cursor.Current = Cursors.Arrow;
         }
 
@@ -59,7 +63,7 @@ namespace Yatzy
             int i, j;
             MyRubrikCoordinates((Control)sender, out i, out j);
 
-            if (i < UsedScores.GetUpperBound(0) && !UsedScores[i, j])
+            if (i < UsedScores.GetUpperBound(0) && !UsedScores[i, j] && Rubrik[i, j] != null)
                 Rubrik[i, j].Text = "";
             Cursor.Current = Cursors.Default;
         }
@@ -71,8 +75,10 @@ namespace Yatzy
             int i, j;
             MyItemCoordinates((Control)sender, out i, out j);
 
-            if (i < UsedScores.GetUpperBound(0) && !UsedScores[i, j])
+            if (i < UsedScores.GetUpperBound(0) && !UsedScores[i, j] && Rubrik[i,j] != null)
+            {
                 Rubrik[i, j].Text = "";
+            }
             Cursor.Current = Cursors.Default;
         }
 
@@ -104,6 +110,11 @@ namespace Yatzy
         {
             if (Touchy)
                 TouchOrClick(e);
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            TargetDie = -1;
         }
 
         private void TouchOrClick(MouseEventArgs e)

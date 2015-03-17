@@ -48,10 +48,39 @@ namespace Yatzy
             get { return 7; }
         }
 
+        /// <summary>
+        /// enumerate from end game = 0000000 to 
+        /// beginning = 4444444 (Note: numbers have a radix of 5)
+        /// </summary>
         protected override int GameNodes
-        {   // enumerate from end game = 0000000 to 
-            // beginning = 4444444 (Note: numbers have a radix of 5)
+        {   
             get { return power(UsableScoreBoxesPerItem + 1, UsableItems) - 1; }
+        }
+
+        public override int MostPopular(int[] diceVec, bool[,] usedScores)
+        {
+            bool[] activeScores = new bool[6];
+            for (var row = 0; row < 3; row++)
+            {
+                for (var col = 0; col < UsableScoreBoxesPerItem; col++)
+                {
+                    if (usedScores[row, col])
+                        continue;
+                    activeScores[row + 3] = true;
+                }
+            }
+            int mostPopular = 6;
+            int[] roll = OrderRoll(diceVec, activeScores);
+            var mx = roll.Max();
+            for (var row = 0; row < 6; row++)
+            {
+                if (roll[row] == mx)
+                {
+                    mostPopular = row + 1;
+                }
+            }
+
+            return mostPopular;
         }
 
         protected override int SubNode(int Node, int Item, int SubItem)

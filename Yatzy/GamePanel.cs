@@ -94,6 +94,12 @@ namespace Yatzy
             }
         }
 
+        public void ToggleButtonsVisibility()
+        {
+            TerningeKast.Visible ^= true;
+            StartAgain.Visible ^= true;
+        }
+
         private void DrawPanel()
         {
             Rubrik = new TextBox[Game.MaxTotalItem + 1, 6];
@@ -232,15 +238,69 @@ namespace Yatzy
 
         public GameForm.RollState[] DiceRoll { get; set; }
 
+        /// <summary>
+        /// add current match as top row of the DataGridView with head to heads.
+        /// </summary>
+        private void ShowCurrentMatchStats()
+        {
+            GameStat stat = new GameStat
+            {
+                GameName = GameForm.CollectGameName(),
+                Started = commenced,
+                Ended = DateTime.Now,
+                MaxRound = Game.MaxRound,
+                PlayerA = GamerName,
+                PlayerB = OtherPanel.GamerName,
+                PointsA = Game.BonusPoints,
+                PointsB = OtherPanel.Game.BonusPoints,
+                ScoreA = Game.GamePoints,
+                ScoreB = OtherPanel.Game.GamePoints,
+                RoundA = Rounds,
+                RoundB = OtherPanel.Rounds,
+            };
+            GameForm.GameStats.AddMatch(stat);
+        }
+
         private void ShowScore()
         {
-            int diffPoints = Game.GamePoints - OtherPanel.Game.GamePoints;
-            if (diffPoints > 0)
-                MessageBox.Show(string.Format("{0} scored {1} and won by {2}", gamerName, Game.GamePoints, diffPoints));
-            if (diffPoints == 0)
-                MessageBox.Show(string.Format("{0} scored {1} and made a draw", gamerName, Game.GamePoints));
-            if (diffPoints < 0)
-                MessageBox.Show(string.Format("{0} scored {1} and lost by {2}", gamerName, Game.GamePoints, -diffPoints));
+            if (Game is Balut)
+            {
+                int diffPoints = Game.BonusPoints - OtherPanel.Game.BonusPoints;
+                if (diffPoints > 0)
+                    MessageBox.Show(string.Format("{0} has {1} points and won by {2}", gamerName, Game.BonusPoints, diffPoints));
+                if (diffPoints == 0)
+                {
+                    int diffScore = Game.GamePoints - OtherPanel.Game.GamePoints;
+                    if (diffScore == 0)
+                    {
+                        MessageBox.Show(string.Format("{0} has {1} points and made a draw", gamerName, Game.BonusPoints));
+                    }
+                    if (diffScore > 0)
+                    {
+                        MessageBox.Show(string.Format("{0} has equal {1} points but won by scoring {2} more", gamerName, Game.BonusPoints, diffScore));
+                    }
+                    if (diffScore < 0)
+                    {
+                        MessageBox.Show(string.Format("{0} has equal {1} points but lost by scoring {2} less", gamerName, Game.BonusPoints, -diffScore));
+                    }
+                }
+                if (diffPoints < 0)
+                {
+                    MessageBox.Show(string.Format("{0} has {1} points and lost with {2} points", gamerName, Game.BonusPoints, -diffPoints));
+                }
+            }
+            else
+            {
+                int diffPoints = Game.GamePoints - OtherPanel.Game.GamePoints;
+                if (diffPoints > 0)
+                    MessageBox.Show(string.Format("{0} scored {1} and won by {2}", gamerName, Game.GamePoints, diffPoints));
+                if (diffPoints == 0)
+                {
+                    MessageBox.Show(string.Format("{0} scored {1} and made a draw", gamerName, Game.GamePoints));
+                }
+                if (diffPoints < 0)
+                    MessageBox.Show(string.Format("{0} scored {1} and lost by {2}", gamerName, Game.GamePoints, -diffPoints));
+            }
         }
 
         /// <summary>
@@ -284,13 +344,7 @@ namespace Yatzy
                 TerningeKast.Focus();
                 Undoable = true;
             }
-            else
-            {
-                TerningeKastText = "";
-                TerningeKast.Enabled = false;
-                // Checking hi score is premature here since the human player may still have one final score to settle
-                //checkHiScore(Game, gamerName, commenced);
-            }
+            
             TerningeKast.Text = TerningeKastText;
 
             using (var g = Graphics.FromHwnd(Handle))
@@ -447,28 +501,32 @@ namespace Yatzy
         private int DecidingCol;
         private TextBox[] Items;
 
+        protected void TogglePanels()
+        {
+            if (OtherPanel != null)
+            {
+                ToggleButtonsVisibility();
+                OtherPanel.ToggleButtonsVisibility();
+            }
+        }
+
         protected void myMouseDecider(object sender)
         {
             var control = (Control)sender;
             ScoreIt(control.Tag.ToString(), RollCounter);
-            if (OtherPanel != null)
-            {
-                TerningeKast.Visible = false;
-                OtherPanel.TerningeKast.Visible = true;
-                //_computerGame(_otherPanel); // play the other side now
-            }
 
             if (Rounds == Game.MaxRound)
             {
                 TerningeKastText = "";
                 TerningeKast.Enabled = false;
-                checkHiScore(Game, gamerName, commenced);
-                if (OtherPanel != null)
+                if (checkHiScore != null)
                 {
                     checkHiScore(OtherPanel.Game, OtherPanel.gamerName, commenced);
+                    checkHiScore(Game, gamerName, commenced);
+                    ShowScore();
                 }
-                ShowScore();
             }
+            TogglePanels();
         }
 
         public void UnDecider()
@@ -558,12 +616,11 @@ namespace Yatzy
             }
         }
 
+        /// <summary>
+        /// Check whether a game is in progress
+        /// </summary>
+        /// <returns>a new game is ready</returns>
         private void NewGame()
-        {
-            OnButtonClicked2(StartAgain, new EventArgs());
-        }
-
-        private void OnButtonClicked2(Object sender, EventArgs e)
         {
             Undoable = false;
 
@@ -606,11 +663,24 @@ namespace Yatzy
                 Rubrik[r, 0].Enabled = false;
                 Rubrik[r, 0].Text = "";
             }
+        }
 
-            if (OtherPanel != null)
+        private void OnButtonClicked2(Object sender, EventArgs e)
+        {
+            if (Rounds > Game.MaxRound/4)
             {
-                OtherPanel.NewGame();
+                if (Rounds < Game.MaxRound)
+                {
+                    // Ongoing game
+                    var result = MessageBox.Show("Ongoing game. Do you want to stop it?",
+                        string.Format("Round {0} of {1}", Rounds, Game.MaxRound), MessageBoxButtons.YesNo);
+                    if (result == DialogResult.No)
+                        return;
+                }
+                ShowCurrentMatchStats();
             }
+            NewGame();
+            OtherPanel.NewGame();
         }
 
         protected void UpdateTerningeKast()
@@ -619,11 +689,6 @@ namespace Yatzy
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Enabled = true;
             TerningeKast.Focus();
-        }
-
-        protected override void OnMouseLeave(EventArgs e)
-        {
-            TargetDie = -1;
         }
 
         private int _rolling;
@@ -678,7 +743,7 @@ namespace Yatzy
         }
 
         /// <summary>
-        /// Change player name must be virtual since the computer's name mustn't be changed
+        /// Change player name must be virtual since the computer won't allow a human to change its name
         /// </summary>
         protected virtual void NameLabelClicked()
         {
@@ -688,7 +753,6 @@ namespace Yatzy
         {
             NameLabelClicked();
         }
-
     }
 
     internal class myTextBox : TextBox

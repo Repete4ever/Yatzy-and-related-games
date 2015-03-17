@@ -58,5 +58,29 @@ namespace Yatzy.Properties {
                 this["GameSetting"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MatchLocation {
+            get {
+                return ((string)(this["MatchLocation"]));
+            }
+            set {
+                this["MatchLocation"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("PHDGames")]
+        public string Repository {
+            get {
+                return ((string)(this["Repository"]));
+            }
+            set {
+                this["Repository"] = value;
+            }
+        }
     }
 }

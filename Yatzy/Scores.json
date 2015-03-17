@@ -1,0 +1,30 @@
+[
+    {
+        "GameName": "Balut",
+        "Started": "2015-03-12T14:13:55",
+        "Ended": "2015-03-12T14:24:32",
+        "MaxRound":  28,
+        "PlayerA": "Repete",
+        "PointsA": 9,
+        "ScoreA": 453,
+        "RoundA": 28,
+        "PlayerB": "HAL 6000",
+        "PointsB": 0,
+        "ScoreB": 200,
+        "RoundB": 28
+    }, 
+    {
+        "GameName": "Yatzy",
+        "Started": "2015-03-11T13:44:05",
+        "Ended": "2015-03-11T13:51:40",
+        "MaxRound":  15,
+        "PlayerA": "HAL 6000",
+        "PointsA": 0,
+        "ScoreA": 145,
+        "RoundA": 15,
+        "PlayerB": "Repete",
+        "PointsB": 0,
+        "ScoreB": 211,
+        "RoundB": 15
+      }
+]

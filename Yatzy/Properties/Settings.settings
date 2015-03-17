@@ -11,5 +11,11 @@
     <Setting Name="GameSetting" Type="System.String" Scope="User">
       <Value Profile="(Default)">Yatzy</Value>
     </Setting>
+    <Setting Name="MatchLocation" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="Repository" Type="System.String" Scope="User">
+      <Value Profile="(Default)">PHDGames</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
