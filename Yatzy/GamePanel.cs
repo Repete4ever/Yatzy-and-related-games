@@ -12,6 +12,8 @@ namespace Yatzy
 
         public delegate void AutoGame(GamePanel panel);
 
+        public delegate void InitForm(string gameText);
+
         private const int OptimalDieSize = 66;
 
         public GameOfDice Game { get; private set; }
@@ -48,6 +50,8 @@ namespace Yatzy
 
         private readonly CheckHiScore checkHiScore;
 
+        private readonly InitForm _changeGame;
+
         private int OldRollCounter;
         protected int RollCounter;
 
@@ -56,23 +60,25 @@ namespace Yatzy
         //private readonly AutoGame _computerGame;
         public GamePanel OtherPanel { get; set; }
 
-        protected GamePanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore)
+        protected GamePanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore, InitForm changeGame)
         {
             ResizeRedraw = true; 
             
             InitializeComponent();
 
             Controls.Add(TerningeKast);
-            Controls.Add(StartAgain);
+            tableLayoutPanel1.Controls.Add(StartAgain, 0, 0);
+            gameComboBox.SelectedItem = _selectedGame = game.ToString();
+            tableLayoutPanel1.Controls.Add(gameComboBox, 1, 0);
+            Controls.Add(tableLayoutPanel1);
             Controls.Add(nameLabel);
 
             DiceVec = new int[game.Dice];
-            this.Game = game;
+            Game = game;
             this.gamerName = gamerName;
             commenced = DateTime.Now;
             this.checkHiScore = checkHiScore;
-
-            //_computerGame = computerGame;
+            _changeGame = changeGame;
 
             DrawPanel();
         }
@@ -97,7 +103,7 @@ namespace Yatzy
         public void ToggleButtonsVisibility()
         {
             TerningeKast.Visible ^= true;
-            StartAgain.Visible ^= true;
+            tableLayoutPanel1.Visible ^= true;
         }
 
         private void DrawPanel()
@@ -225,8 +231,12 @@ namespace Yatzy
             TerningeKast.Size = oneSizeFitsAll;
 
             StartAgain.Text = StartOver[GameOfDice.ChosenLanguage];
-            StartAgain.Location = new Point(0, DieSize + 5 * DieDist + 27);
-            StartAgain.Size = oneSizeFitsAll;
+            //StartAgain.Location = new Point(0, DieSize + 5 * DieDist + 27);
+            tableLayoutPanel1.Location = new Point(0, DieSize + 5 * DieDist + 27);
+            tableLayoutPanel1.Size = new Size(DieSize * Game.Dice + DieDist * (Game.Dice - 1), 26);
+            var size = StartAgain.Size;
+            //if (size.Height < 23)
+            //    StartAgain.Size = new Size(75,23);
 
             nameLabel.Text = GamerName;
             nameLabel.Location = new Point(0, DieSize + 5 * DieDist + 54);
@@ -253,8 +263,8 @@ namespace Yatzy
                 PlayerB = OtherPanel.GamerName,
                 PointsA = Game.BonusPoints,
                 PointsB = OtherPanel.Game.BonusPoints,
-                ScoreA = Game.GamePoints,
-                ScoreB = OtherPanel.Game.GamePoints,
+                ScoreA = Game.GameScore,
+                ScoreB = OtherPanel.Game.GameScore,
                 RoundA = Rounds,
                 RoundB = OtherPanel.Rounds,
             };
@@ -270,7 +280,7 @@ namespace Yatzy
                     MessageBox.Show(string.Format("{0} has {1} points and won by {2}", gamerName, Game.BonusPoints, diffPoints));
                 if (diffPoints == 0)
                 {
-                    int diffScore = Game.GamePoints - OtherPanel.Game.GamePoints;
+                    int diffScore = Game.GameScore - OtherPanel.Game.GameScore;
                     if (diffScore == 0)
                     {
                         MessageBox.Show(string.Format("{0} has {1} points and made a draw", gamerName, Game.BonusPoints));
@@ -291,15 +301,15 @@ namespace Yatzy
             }
             else
             {
-                int diffPoints = Game.GamePoints - OtherPanel.Game.GamePoints;
+                int diffPoints = Game.GameScore - OtherPanel.Game.GameScore;
                 if (diffPoints > 0)
-                    MessageBox.Show(string.Format("{0} scored {1} and won by {2}", gamerName, Game.GamePoints, diffPoints));
+                    MessageBox.Show(string.Format("{0} scored {1} and won by {2}", gamerName, Game.GameScore, diffPoints));
                 if (diffPoints == 0)
                 {
-                    MessageBox.Show(string.Format("{0} scored {1} and made a draw", gamerName, Game.GamePoints));
+                    MessageBox.Show(string.Format("{0} scored {1} and made a draw", gamerName, Game.GameScore));
                 }
                 if (diffPoints < 0)
-                    MessageBox.Show(string.Format("{0} scored {1} and lost by {2}", gamerName, Game.GamePoints, -diffPoints));
+                    MessageBox.Show(string.Format("{0} scored {1} and lost by {2}", gamerName, Game.GameScore, -diffPoints));
             }
         }
 
@@ -376,7 +386,7 @@ namespace Yatzy
 
         public static bool Touchy { get; set; }
 
-        private string GamerName
+        public string GamerName
         {
             get { return gamerName; }
         }
@@ -679,8 +689,18 @@ namespace Yatzy
                 }
                 ShowCurrentMatchStats();
             }
-            NewGame();
-            OtherPanel.NewGame();
+            if (_selectedGame == Game.ToString())
+            {
+                NewGame();
+                OtherPanel.NewGame();
+            }
+            else
+            {
+                if (_changeGame != null)
+                {
+                    _changeGame(_selectedGame);
+                }
+            }
         }
 
         protected void UpdateTerningeKast()
@@ -692,6 +712,7 @@ namespace Yatzy
         }
 
         private int _rolling;
+        private string _selectedGame;
 
         private void Rolling(object sender, EventArgs e)
         {
@@ -752,6 +773,30 @@ namespace Yatzy
         private void nameLabel_Click(object sender, EventArgs e)
         {
             NameLabelClicked();
+        }
+
+        private void gameComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ComboBox box = (ComboBox) sender;
+            _selectedGame = box.SelectedItem.ToString();
+        }
+
+        /// <summary>
+        /// fjerner en tabelindgang i "number" og skubber paa plads
+        /// returnerer opdateret "nc" (2-tal-system)
+        /// </summary>
+        /// <param name="nu"></param>
+        /// <param name="nam"></param>
+        /// <param name="nc"></param>
+        /// <param name="number"></param>
+        /// <returns></returns>
+        protected int modify(int nu,int nam,int nc,int[] number)
+        {
+            for (int i=0; i<nu; i++)
+            if (number[i]==nam)
+                for (int j=i; j< nu-1; j++) number[j]=number[j+1];
+            nc-=1<<(nam-1);
+            return nc;
         }
     }
 

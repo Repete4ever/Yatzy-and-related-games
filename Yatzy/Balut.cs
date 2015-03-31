@@ -52,7 +52,7 @@ namespace Yatzy
         /// enumerate from end game = 0000000 to 
         /// beginning = 4444444 (Note: numbers have a radix of 5)
         /// </summary>
-        protected override int GameNodes
+        public override int GameNodes
         {   
             get { return power(UsableScoreBoxesPerItem + 1, UsableItems) - 1; }
         }
@@ -180,9 +180,9 @@ namespace Yatzy
 
         enum balut { firere, femmere, seksere, straight, hus, chance, balut_, total };
 
-        protected override int TotalPoints()
+        public override int GameScore
         {
-            return myPoints;
+            get { return myPoints; }
         }
 
         protected override void MyPoints(int[] nx)

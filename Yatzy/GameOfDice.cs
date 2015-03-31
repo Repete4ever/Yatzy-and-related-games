@@ -48,11 +48,6 @@ namespace Yatzy
             get { return myDice; }
         }
 
-        public int GamePoints
-        {
-            get { return myPoints; }
-        }
-
         public virtual int BonusPoints
         {
             get { return 0; }
@@ -73,7 +68,7 @@ namespace Yatzy
             get { return MaxRound; }
         }
 
-        protected virtual int GameNodes
+        public virtual int GameNodes
         {   // simple when an item may only be used once (and bonus is ignored)
             // Balut must override (even when bonuses are ignored!)
             get { return (1 << UsableItems) - 1; }
@@ -213,9 +208,9 @@ namespace Yatzy
         {
         }
 
-        protected virtual int TotalPoints()
+        public virtual int GameScore
         {
-            return myPoints + (myHighPoints >= BonusThreshold ? myBonus : 0);
+            get { return myPoints + (myHighPoints >= BonusThreshold ? myBonus : 0); }
         }
 
         public virtual string ScoreIt(int[] nw, int i, int j, int roll)
@@ -225,7 +220,7 @@ namespace Yatzy
             if (IsABonusItem(i, j)) 
                 return Bonus(i);
             if (i > MaxItem + SumItems + BonusItems)
-                return "" + TotalPoints();
+                return "" + GameScore;
 
             points(nw);
 
@@ -249,7 +244,7 @@ namespace Yatzy
             if (IsABonusItem(i, j)) 
                 return Bonus(i);
             if (i > MaxItem + SumItems + BonusItems)
-                return "" + TotalPoints();
+                return "" + GameScore;
 
             points(nw);
 

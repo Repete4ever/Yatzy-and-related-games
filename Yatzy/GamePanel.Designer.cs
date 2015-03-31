@@ -33,6 +33,8 @@
             this.StartAgain = new System.Windows.Forms.Button();
             this.nameLabel = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.gameComboBox = new System.Windows.Forms.ComboBox();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.SuspendLayout();
             // 
             // TerningeKast
@@ -47,6 +49,7 @@
             // 
             // StartAgain
             // 
+            this.StartAgain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.StartAgain.Location = new System.Drawing.Point(0, 0);
             this.StartAgain.Name = "StartAgain";
             this.StartAgain.Size = new System.Drawing.Size(75, 23);
@@ -61,7 +64,7 @@
             this.nameLabel.Location = new System.Drawing.Point(0, 0);
             this.nameLabel.Name = "nameLabel";
             this.nameLabel.Size = new System.Drawing.Size(100, 23);
-            this.nameLabel.TabIndex = 0;
+            this.nameLabel.TabIndex = 1;
             this.nameLabel.Text = "label1";
             this.nameLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.nameLabel.Click += new System.EventHandler(this.nameLabel_Click);
@@ -70,6 +73,33 @@
             // 
             this.timer1.Interval = 50;
             this.timer1.Tick += new System.EventHandler(this.Rolling);
+            // 
+            // gameComboBox
+            // 
+            this.gameComboBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gameComboBox.Items.AddRange(new object[] {
+            "Yatzy",
+            "Yahtzee",
+            "Maxiyatzy",
+            "Balut"});
+            this.gameComboBox.Location = new System.Drawing.Point(0, 0);
+            this.gameComboBox.Name = "gameComboBox";
+            this.gameComboBox.Size = new System.Drawing.Size(121, 21);
+            this.gameComboBox.TabIndex = 1;
+            this.gameComboBox.SelectedIndexChanged += new System.EventHandler(this.gameComboBox_SelectedIndexChanged);
+            // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 2;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 1;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(200, 100);
+            this.tableLayoutPanel1.TabIndex = 0;
             this.ResumeLayout(false);
 
         }
@@ -80,5 +110,7 @@
         protected System.Windows.Forms.Label nameLabel;
         public System.Windows.Forms.Button StartAgain;
         public System.Windows.Forms.Button TerningeKast;
+        private System.Windows.Forms.ComboBox gameComboBox;
+        public System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }

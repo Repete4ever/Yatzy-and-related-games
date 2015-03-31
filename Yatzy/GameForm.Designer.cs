@@ -42,11 +42,6 @@
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.eXitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.PlayYatzy = new System.Windows.Forms.ToolStripMenuItem();
-            this.PlayYahtzee = new System.Windows.Forms.ToolStripMenuItem();
-            this.PlayMaxiyatzy = new System.Windows.Forms.ToolStripMenuItem();
-            this.PlayBalut = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.showHiScoreToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.rulesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -168,54 +163,16 @@
             // gameToolStripMenuItem
             // 
             this.gameToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.PlayYatzy,
-            this.PlayYahtzee,
-            this.PlayMaxiyatzy,
-            this.PlayBalut,
-            this.toolStripSeparator3,
             this.showHiScoreToolStripMenuItem});
             this.gameToolStripMenuItem.Name = "gameToolStripMenuItem";
             this.gameToolStripMenuItem.Size = new System.Drawing.Size(55, 20);
             this.gameToolStripMenuItem.Text = "&Games";
             this.gameToolStripMenuItem.Click += new System.EventHandler(this.OnPopupOptionsMenu2);
             // 
-            // PlayYatzy
-            // 
-            this.PlayYatzy.Name = "PlayYatzy";
-            this.PlayYatzy.Size = new System.Drawing.Size(146, 22);
-            this.PlayYatzy.Text = "&Yatzy";
-            this.PlayYatzy.Click += new System.EventHandler(this.OnGame1);
-            // 
-            // PlayYahtzee
-            // 
-            this.PlayYahtzee.Name = "PlayYahtzee";
-            this.PlayYahtzee.Size = new System.Drawing.Size(146, 22);
-            this.PlayYahtzee.Text = "ya&Htzee";
-            this.PlayYahtzee.Click += new System.EventHandler(this.OnGame2);
-            // 
-            // PlayMaxiyatzy
-            // 
-            this.PlayMaxiyatzy.Name = "PlayMaxiyatzy";
-            this.PlayMaxiyatzy.Size = new System.Drawing.Size(146, 22);
-            this.PlayMaxiyatzy.Text = "&Maxiyatzy";
-            this.PlayMaxiyatzy.Click += new System.EventHandler(this.OnGame3);
-            // 
-            // PlayBalut
-            // 
-            this.PlayBalut.Name = "PlayBalut";
-            this.PlayBalut.Size = new System.Drawing.Size(146, 22);
-            this.PlayBalut.Text = "&Balut";
-            this.PlayBalut.Click += new System.EventHandler(this.OnGame4);
-            // 
-            // toolStripSeparator3
-            // 
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(143, 6);
-            // 
             // showHiScoreToolStripMenuItem
             // 
             this.showHiScoreToolStripMenuItem.Name = "showHiScoreToolStripMenuItem";
-            this.showHiScoreToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+            this.showHiScoreToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.showHiScoreToolStripMenuItem.Text = "show &HiScore";
             this.showHiScoreToolStripMenuItem.Click += new System.EventHandler(this.OnHiScore);
             // 
@@ -288,11 +245,6 @@
         private System.Windows.Forms.ToolStripMenuItem ClickDice;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripMenuItem eXitToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem PlayYatzy;
-        private System.Windows.Forms.ToolStripMenuItem PlayYahtzee;
-        private System.Windows.Forms.ToolStripMenuItem PlayMaxiyatzy;
-        private System.Windows.Forms.ToolStripMenuItem PlayBalut;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripMenuItem showHiScoreToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem rulesToolStripMenuItem;

@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Linq;
 
 namespace Yatzy
 {
@@ -17,6 +16,16 @@ namespace Yatzy
         private readonly double[,] varia = new double[462, 3];
 
         private readonly double[,] value = new double[462, 3];
+
+        public int[,] Keep
+        {
+            get { return keep; }
+        }
+
+        public int[] Name
+        {
+            get { return name; }
+        }
 
         static public int power(int f, int n)
         { /* computes f to the n'th power */
@@ -127,7 +136,7 @@ namespace Yatzy
             return index;
         }
 
-        private int Seqno(int[] ny)
+        public int Seqno(int[] ny)
         {
             int nyi = ny[4];
             int nn = ny[1] + ny[2] + ny[3] + ny[5] + nyi + ny[0];
@@ -176,13 +185,13 @@ namespace Yatzy
 
         /// <summary>
         /// Find R1 strategy by dynamic programming
-        /// R1 is maximizing points score. R2 is the more advanced maximing chance to win
+        /// R1 is maximizing points score (sans bonus). R2 is the more advanced maximing chance to win
         /// </summary>
         /// <param name="LevelOfAnalysis">Analyze the whole game or a subgame</param>
         /// <param name="NewDice">the roll</param>
-        /// <param name="UnusedI">unused scores (subgame only)</param>
+        /// <param name="UnusedI">unused items (subgame only)</param>
         /// <param name="NodeNo">subgame node</param>
-        /// <param name="ActiveI">scores in play</param>
+        /// <param name="ActiveI">items still in play</param>
         /// <param name="PointsToWin">end game scenario</param>
         public void GamePlan(int LevelOfAnalysis, int[] NewDice,
             int[,] UnusedI, int NodeNo, int ActiveI, int PointsToWin)
@@ -190,7 +199,7 @@ namespace Yatzy
             Contract.Assert(LevelOfAnalysis == 6 || LevelOfAnalysis == 3);
             int[] n = new int[6];
             int loop;
-            int ja, index;
+            int index;
             int n1, n2, n3, n4, n5, n6;
             int m1max, m2max, m3max, m4max, m5max;
             int m1, m2, m3, m4, m5;
@@ -236,7 +245,7 @@ namespace Yatzy
             {
                 var n0min = nmin[loop];
                 var n0max = nmax[loop];
-                ja = jay[loop];
+                var ja = jay[loop];
                 index = 0;
                 if (n0min == 2) index = 252;
                 int n0;
@@ -422,7 +431,7 @@ namespace Yatzy
             inn[5] = 0;
         }
 
-        private void Status(int index, int[] nz)
+        public void Status(int index, int[] nz)
         {
             int i;
             int nn;
@@ -450,6 +459,24 @@ namespace Yatzy
                 if (nn == -1) return;
             }
             nz[5] = nn + 1;
+        }
+
+        /// <summary>
+        /// fjerner en tabelindgang i "number" og skubber paa plads
+        /// returnerer opdateret "nc" (2-tal-system)
+        /// </summary>
+        /// <param name="nu">remaining rounds</param>
+        /// <param name="nam">item being decommissioned</param>
+        /// <param name="nc">node number</param>
+        /// <param name="number">table of unused items</param>
+        /// <returns>new node number</returns>
+        protected int Modify(int nu,int nam,int nc,int[] number)
+        {
+            for (int i = 0; i < nu; i++)
+                if (number[i] == nam)
+                    for (int j = i; j < nu - 1; j++) number[j] = number[j + 1];
+            nc -= 1 << (nam - 1);
+            return nc;
         }
 
         public override void InhabitTables()
@@ -502,19 +529,19 @@ namespace Yatzy
                 }
             }
 
-            { // self-test
-                int[] n = new int[6];
-                for (int ix = 0; ix < 462; ix++)
-                {
-                    Status(ix, n);
-                    int i = Seqno(n);
-                    if (ix != i)
-                    {
-                        throw new ApplicationException("bad seqno " + ix + " -> " + i);
-                    }
+            //{ // self-test
+            //    int[] n = new int[6];
+            //    for (int ix = 0; ix < 462; ix++)
+            //    {
+            //        Status(ix, n);
+            //        int i = Seqno(n);
+            //        if (ix != i)
+            //        {
+            //            throw new ApplicationException("bad seqno " + ix + " -> " + i);
+            //        }
 
-                }
-            }
+            //    }
+            //}
 
         }
     }

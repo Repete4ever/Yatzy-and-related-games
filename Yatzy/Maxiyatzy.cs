@@ -162,7 +162,7 @@ namespace Yatzy
                                 if (nx[j - 1] == 2)
                                 {
                                     pts[trepar] = (i + j + ih) * 2;
-                                    pts[trepar] = (i + j + ih) * 100 / 15;
+                                    pct[trepar] = (i + j + ih) * 100 / 15;
                                 }
                         }
                     return;

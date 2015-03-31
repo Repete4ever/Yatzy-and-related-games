@@ -13,6 +13,7 @@ namespace Yatzy
         private DataTable _editedScoreTable;
         private readonly List<GameStat> _gameStats;
         private readonly string _matchFile;
+        private int _addedMatches;
 
         public GameStats()
         {
@@ -48,6 +49,7 @@ namespace Yatzy
 
         public void AddMatch(GameStat gameStat)
         {
+            _addedMatches++;
             _gameStats.Insert(0, gameStat);
             ShowMatches(GameForm.CollectGameName());
         }
@@ -104,7 +106,9 @@ namespace Yatzy
 
         public void SaveMatches()
         {
-            string json = JsonConvert.SerializeObject(_gameStats);
+            if (_addedMatches == 0)
+                return;
+            string json = JsonConvert.SerializeObject(_gameStats, Formatting.Indented);
             try
             {
                 File.WriteAllText(_matchFile, json);

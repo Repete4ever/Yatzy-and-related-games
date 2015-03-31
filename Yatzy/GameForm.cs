@@ -22,9 +22,6 @@ namespace Yatzy
         {
             InitializeComponent();
 
-            var collectPlayerName = new PlayerName();
-            Player = collectPlayerName.UserName;
-
             gameSizes.Add("Maxiyatzy", new Size(885, 415));
             gameSizes.Add("Yatzy", new Size(602, 449));
             gameSizes.Add("Yahtzee", new Size(602, 413));
@@ -135,8 +132,8 @@ namespace Yatzy
                 var myRow = Scores.Tables["Score"].NewRow();
                 myRow["Game"] = game;
                 myRow["Player"] = gamerName;
-                myRow["Point"] = game.GamePoints;
-                var PLayingBalut = game.ToString() == "Balut";
+                myRow["Point"] = game.GameScore;
+                var PLayingBalut = game is Balut;
                 if (PLayingBalut)
                     myRow["Bonus"] = game.BonusPoints;
                 var now = DateTime.Now;
@@ -161,7 +158,7 @@ namespace Yatzy
                     var ColumnToUse = PLayingBalut ? "Bonus" : "Point";
                     var ps = Score[HiLen - 1][ColumnToUse].ToString();
                     var pi = Int32.Parse(ps);
-                    var g = game.GamePoints;
+                    var g = game.GameScore;
                     var Last = myRow["Ended"] == Score[HiLen - 1]["Ended"];
                     if (g > pi || Last)
                     {
@@ -246,10 +243,11 @@ namespace Yatzy
 
         private GameOfDice HumanGame;
         private GameOfDice HalGame;
-        private readonly string Player;
 
         private void InitForm(string gameText)
         {
+            Size = gameSizes[gameText];
+
             HumanGame = null;
             if (gameText == "Yatzy")
                 HumanGame = new Yatzy();
@@ -286,9 +284,11 @@ namespace Yatzy
             
             _computerPlaysFirst ^= true;
 
+            var collectPlayerName = new PlayerName();
+
             GameOfDice.ChosenLanguage = ChosenLanguage;
-            GamePanel computerPanel = new ComputerPanel(HalGame, _computerPlaysFirst ? (GamePanel.CheckHiScore) null : CheckHiScore) { DieColor = Color.Blue, };
-            GamePanel humanPanel = new HumanPanel(HumanGame, Player, _computerPlaysFirst ? CheckHiScore : (GamePanel.CheckHiScore) null) { DieColor = Color.Red };
+            GamePanel computerPanel = new ComputerPanel(HalGame, _computerPlaysFirst ? (GamePanel.CheckHiScore) null : CheckHiScore, InitForm) { DieColor = Color.Blue, };
+            GamePanel humanPanel = new HumanPanel(HumanGame, collectPlayerName.UserName, _computerPlaysFirst ? CheckHiScore : (GamePanel.CheckHiScore)null, InitForm) { DieColor = Color.Red };
             computerPanel.OtherPanel = humanPanel;
             humanPanel.OtherPanel = computerPanel;
             scorePanels.Controls.Add(_computerPlaysFirst ? computerPanel : humanPanel, 0, 0);
@@ -300,9 +300,9 @@ namespace Yatzy
             {
                 //AutoGame(computerPanel);
                 computerPanel.TerningeKast.Visible = true;
-                computerPanel.StartAgain.Visible = true;
+                computerPanel.tableLayoutPanel1.Visible = true;
                 humanPanel.TerningeKast.Visible = false;
-                humanPanel.StartAgain.Visible = false;
+                humanPanel.tableLayoutPanel1.Visible = false;
             }
 
             //for (var row = 0; row < HalGame.UsableItems; row++)
@@ -470,10 +470,6 @@ namespace Yatzy
 
         private void OnPopupOptionsMenu2(object sender, EventArgs e)
         {
-            PlayYatzy.Checked = HumanGame.ToString() == "Yatzy";
-            PlayYahtzee.Checked = HumanGame.ToString() == "Yahtzee";
-            PlayMaxiyatzy.Checked = HumanGame.ToString() == "Maxiyatzy";
-            PlayBalut.Checked = HumanGame.ToString() == "Balut";
         }
 
         private void OnLanguage1(object sender, EventArgs e)
@@ -535,54 +531,6 @@ namespace Yatzy
         private void OnExit(object sender, EventArgs e)
         {
             Close();
-        }
-
-        private void OnGame1(object sender, EventArgs e)
-        {
-            var b = PlayYatzy.Checked;
-            PlayYatzy.Checked = true;
-            PlayYahtzee.Checked = false;
-            PlayMaxiyatzy.Checked = false;
-            PlayBalut.Checked = false;
-            Size = gameSizes["Yatzy"];
-            if (!b)
-                InitForm("Yatzy");
-        }
-
-        private void OnGame2(object sender, EventArgs e)
-        {
-            var b = PlayYahtzee.Checked;
-            PlayYatzy.Checked = false;
-            PlayYahtzee.Checked = true;
-            PlayMaxiyatzy.Checked = false;
-            PlayBalut.Checked = false;
-            Size = gameSizes["Yahtzee"];
-            if (!b)
-                InitForm("Yahtzee");
-        }
-
-        private void OnGame3(object sender, EventArgs e)
-        {
-            var b = PlayMaxiyatzy.Checked;
-            PlayYatzy.Checked = false;
-            PlayYahtzee.Checked = false;
-            PlayMaxiyatzy.Checked = true;
-            PlayBalut.Checked = false;
-            Size = gameSizes["Maxiyatzy"];
-            if (!b)
-                InitForm("Maxiyatzy");
-        }
-
-        private void OnGame4(object sender, EventArgs e)
-        {
-            var b = PlayBalut.Checked;
-            PlayYatzy.Checked = false;
-            PlayYahtzee.Checked = false;
-            PlayMaxiyatzy.Checked = false;
-            PlayBalut.Checked = true;
-            Size = gameSizes["Balut"];
-            if (!b)
-                InitForm("Balut");
         }
 
         private void OnHiScore(object sender, EventArgs e)

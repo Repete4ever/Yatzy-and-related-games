@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
 using System.Media;
 using System.Speech.Synthesis;
 using System.Windows.Forms;
@@ -15,11 +15,11 @@ namespace Yatzy
         private string _nameLabelText;
         private Color _myDieColor;
 
-        public ComputerPanel(GameOfDice game, CheckHiScore checkHiScore)
-            : base(game, "HAL 6000", checkHiScore)
+        public ComputerPanel(GameOfDice game, CheckHiScore checkHiScore, InitForm changeGame)
+            : base(game, "HAL 6000", checkHiScore, changeGame)
         {
             TerningeKast.Visible = false;
-            StartAgain.Visible = false;
+            tableLayoutPanel1.Visible = false;
 
             _synthesizer.SelectVoiceByHints(VoiceGender.Male, VoiceAge.Senior);
             _synthesizer.SetOutputToDefaultAudioDevice();
@@ -27,9 +27,8 @@ namespace Yatzy
             bgPainter.Interval = 5;
             bgPainter.Tick += PaintItRed;
 
-            diePainter.Interval = 10;
+            diePainter.Interval = 1;
             diePainter.Tick += PaintItBlack;
-
         }
 
         /// <summary>
@@ -64,17 +63,27 @@ namespace Yatzy
             _nameLabelText = gamerName;
             gamerName = "TAMPER ALARM";
             SystemSounds.Hand.Play();
-            const string sorry = "I'm Sorry Dave, I'm Afraid I can't Do That";
+            string humanPlayer = OtherPanel.GamerName;
+            if (humanPlayer.ToUpper().StartsWith("REPE"))
+            {
+                humanPlayer = "Re-" + humanPlayer.Substring(2);
+            }
+            string sorry = string.Format("I'm Sorry {0}, I'm Afraid I can't Do That", humanPlayer);
             _synthesizer.SpeakAsync(sorry);
             bgPainter.Start();
         }
 
+        /// <summary>
+        /// Go from e.g. Blue to Black in small increments to make it seem that the computer is thinking
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="eventArgs"></param>
         private void PaintItBlack(object sender, EventArgs eventArgs)
         {
             Color color = _myDieColor;
-            int green = Math.Max(0, color.G - 1);
-            int blue = Math.Max(0, color.B - 1);
-            int red = Math.Max(0, color.R - 1);
+            int green = Math.Max(0, color.G - 5);
+            int blue = Math.Max(0, color.B - 5);
+            int red = Math.Max(0, color.R - 5);
             Application.DoEvents();
             _myDieColor = Color.FromArgb(255, red, green, blue);
             using (var g = Graphics.FromHwnd(Handle))
@@ -87,10 +96,10 @@ namespace Yatzy
 
                 ShowSavedRolls(g);
             } 
-            if (red == 0)
+            if (red == 0 && green == 0 && blue == 0)
             {
                 diePainter.Stop();
-
+               
                 UpdateTerningeKast();
             }
         }
@@ -112,53 +121,126 @@ namespace Yatzy
                     TogglePanels();
                 }
             }
+
+            _myDieColor = DieColor;
+
             diePainter.Start();
         }
 
         protected override void AutoDecide()
         {
-            ScoreType bestScore;
-            int bestScoreCol;
-            int bestScoreRow = BestChoice(Game, out bestScoreCol, out bestScore);
-            if (bestScore.grade >= 90)
+            FiveDice AiGame = Game as FiveDice;
+            if (AiGame != null)
             {
-                if (bestScore.score >= 15)
+                int nodeNo = 0;
+                for (var row = 0; row < Game.UsableItems; row++)
                 {
-                    // we have a winner, a perfect score e.g. 'small straight'
-                    // or a good score, like a house of 66644 
-                    // lousy winners such as one pair in Yatzy are not considered.
-                    var itemStr = string.Format("{0}.{1}", bestScoreRow, bestScoreCol);
+                    for (var col = 0; col < Game.UsableScoreBoxesPerItem; col++)
+                    {
+                        if (UsedScores[row, col]) continue;
+                        nodeNo += 1 << row;
+                    }
+                }
+                int[,] UnusedI = new int[Game.UsableItems, 2];
+                var ActiveI = 0;
+                for (int i = 0; i < Game.UsableItems; i++)
+                {
+                    int d = AiGame.ActiveItem(nodeNo, i);
+                    if (d > 0)
+                    {
+                        UnusedI[ActiveI, 0] = i + 1;
+                        UnusedI[ActiveI, 1] = d;
+                        ActiveI++;
+                    }
+                }
+                int[] orderRoll = Game.OrderRoll(DiceVec);
+                AiGame.GamePlan(3, orderRoll, UnusedI, nodeNo, ActiveI, 0);
+                int seqno = AiGame.Seqno(orderRoll);
+                if (RollCounter == 3)
+                {
+                    int name = AiGame.Name[seqno];
+                    var itemStr = string.Format("{0}.{1}", name, 0); // TODO Balut
                     ScoreIt(itemStr, RollCounter);
                     TogglePanels();
                     return;
                 }
-            }
-            bool rolling = false;
-            for (var i = 0; i < Game.Dice; i++)
-            {
-                //if (DiceRoll[i] != GameForm.RollState.HoldMe)
+                int k = AiGame.Keep[seqno, RollCounter - 1];
+                int[] nkeep = new int[6];
+                AiGame.Status(k, nkeep);
+                int keepSeqno = AiGame.Seqno(nkeep);
+                if (seqno == keepSeqno)
                 {
-                    if (DiceVec[i] == Game.MostPopular(DiceVec, UsedScores))
-                    {
-                        DiceRoll[i] = GameForm.RollState.HoldMe;
-                    }
-                    else
-                    {
-                        DiceRoll[i] = GameForm.RollState.RollMe;
-                        rolling = true;
-                    }
+                    int name = AiGame.Name[seqno];
+                    var itemStr = string.Format("{0}.{1}", name, 0); // TODO Balut
+                    ScoreIt(itemStr, RollCounter);
+                    TogglePanels();
                 }
-            }
-
-            if (rolling)
-            {
-                Reroll();
+                else
+                {
+                    // roll one or more dice
+                    for (int i = 0; i < 6; i++)
+                    {
+                        int numberOfDiceToRoll = orderRoll[i] - nkeep[i];
+                        Debug.Assert(numberOfDiceToRoll >= 0);
+                        for (; numberOfDiceToRoll > 0; numberOfDiceToRoll--)
+                        {
+                            for (int j = 0; j < Game.Dice; j++)
+                            {
+                                if (DiceVec[j] == i + 1 && DiceRoll[j] != GameForm.RollState.RollMe)
+                                {
+                                    DiceRoll[j] = GameForm.RollState.RollMe;
+                                }
+                            }
+                        }
+                    }
+                    Reroll();
+                }
             }
             else
             {
-                var itemStr = string.Format("{0}.{1}", bestScoreRow, bestScoreCol);
-                ScoreIt(itemStr, RollCounter);
-                TogglePanels();
+                ScoreType bestScore;
+                int bestScoreCol;
+                int bestScoreRow = BestChoice(Game, out bestScoreCol, out bestScore);
+                if (bestScore.grade >= 90)
+                {
+                    if (bestScore.score >= 15)
+                    {
+                        // we have a winner, a perfect score e.g. 'small straight'
+                        // or a good score, like a house of 66644 
+                        // lousy winners such as one pair in Yatzy are not considered.
+                        var itemStr = string.Format("{0}.{1}", bestScoreRow, bestScoreCol);
+                        ScoreIt(itemStr, RollCounter);
+                        TogglePanels();
+                        return;
+                    }
+                }
+                bool rolling = false;
+                for (var i = 0; i < Game.Dice; i++)
+                {
+                    //if (DiceRoll[i] != GameForm.RollState.HoldMe)
+                    {
+                        if (DiceVec[i] == Game.MostPopular(DiceVec, UsedScores))
+                        {
+                            DiceRoll[i] = GameForm.RollState.HoldMe;
+                        }
+                        else
+                        {
+                            DiceRoll[i] = GameForm.RollState.RollMe;
+                            rolling = true;
+                        }
+                    }
+                }
+
+                if (rolling)
+                {
+                    Reroll();
+                }
+                else
+                {
+                    var itemStr = string.Format("{0}.{1}", bestScoreRow, bestScoreCol);
+                    ScoreIt(itemStr, RollCounter);
+                    TogglePanels();
+                }
             }
         }
 

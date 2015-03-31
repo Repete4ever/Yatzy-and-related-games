@@ -7,8 +7,8 @@ namespace Yatzy
 {
     class HumanPanel : GamePanel
     {
-        public HumanPanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore) :
-                base(game, gamerName, checkHiScore)
+        public HumanPanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore, InitForm changeGame) :
+            base(game, gamerName, checkHiScore, changeGame)
         {
         }
 
