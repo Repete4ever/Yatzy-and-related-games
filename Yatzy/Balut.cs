@@ -48,15 +48,6 @@ namespace Yatzy
             get { return 7; }
         }
 
-        /// <summary>
-        /// enumerate from end game = 0000000 to 
-        /// beginning = 4444444 (Note: numbers have a radix of 5)
-        /// </summary>
-        public override int GameNodes
-        {   
-            get { return power(UsableScoreBoxesPerItem + 1, UsableItems) - 1; }
-        }
-
         public override int MostPopular(int[] diceVec, bool[,] usedScores)
         {
             bool[] activeScores = new bool[6];
@@ -83,7 +74,7 @@ namespace Yatzy
             return mostPopular;
         }
 
-        protected override int SubNode(int Node, int Item, int SubItem)
+        protected override int SubNode(int Node, int Item)
         {
             // ReSharper disable once UnusedVariable
             string Base5 = MyItoa(Node, 5); // for debug purposes
@@ -261,7 +252,7 @@ namespace Yatzy
             }
         }
 
-        protected override string Bonus(int i)
+        public override string Bonus(int i)
         {
             int Threshold = (3 * UsableScoreBoxesPerItem + 1) * (i + 4);
             switch (i)

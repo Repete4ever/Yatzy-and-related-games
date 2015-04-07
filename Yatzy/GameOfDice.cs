@@ -68,10 +68,13 @@ namespace Yatzy
             get { return MaxRound; }
         }
 
-        public virtual int GameNodes
+        /// <summary>
+        /// enumerate from end game = 0000000 to 
+        /// beginning = 4444444 (Note: numbers have a radix of UsableScoreBoxesPerItem+1)
+        /// </summary>
+        protected int GameNodes
         {   // simple when an item may only be used once (and bonus is ignored)
-            // Balut must override (even when bonuses are ignored!)
-            get { return (1 << UsableItems) - 1; }
+            get { return (int)Math.Pow(UsableScoreBoxesPerItem + 1, UsableItems) - 1; }
         }
 
         public virtual int MaxGroup
@@ -144,11 +147,11 @@ namespace Yatzy
             get { return mySavedRolls; }
         }
 
-        public int UseARoll()
+        public void UseARoll()
         {
             if (mySavedRolls < 1)
-                return 0;
-            return --mySavedRolls;
+                return;
+            --mySavedRolls;
         }
 
         protected abstract void MyPoints(int[] nw);
@@ -175,7 +178,7 @@ namespace Yatzy
         /// <param name="nw">roll e.g. 61236</param>
         /// <param name="active">tttttf</param>
         /// <returns>111000</returns>
-        public int[] OrderRoll(int[] nw, bool[] active)
+        protected int[] OrderRoll(int[] nw, bool[] active)
         {
             int[] nx = new int[6];
             for (int idie = 0; idie < Dice; idie++)
@@ -195,7 +198,7 @@ namespace Yatzy
             MyPoints(OrderRoll(nw));
         }
 
-        protected virtual string Bonus(int i) // takes care of xxYaxx
+        public virtual string Bonus(int i) // takes care of xxYaxx
         {
             if (myHighPoints >= BonusThreshold)
                 return "" + myBonus;
@@ -261,7 +264,7 @@ namespace Yatzy
             return "";
         }
 
-        public virtual int ValueIt(int[] nw, int i)
+        public int ValueIt(int[] nw, int i)
         {
             int d = nw.Sum();
             if (d == 0)

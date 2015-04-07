@@ -71,7 +71,7 @@ namespace Yatzy
             get { return 0; } // the notion of saved rolls doesn't exist
         }
 
-        protected override int SubNode(int Node, int item, int SubItem)
+        protected override int SubNode(int Node, int item)
         {
             return Node - (1 << item);
         }

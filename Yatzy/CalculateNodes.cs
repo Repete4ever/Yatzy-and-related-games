@@ -71,10 +71,10 @@ namespace Yatzy
                         }
                     }
 
-                    if (_game.expect[NodeNo] == 0)
+                    if (_game.Expect[NodeNo] == 0)
                     {
                         _game.GamePlan(6, n, UnusedI, NodeNo, ActiveI, 0);
-                        float e = (float)_game.expect[NodeNo];
+                        float e = (float)_game.Expect[NodeNo];
                         try
                         {
                             esw.Write(e);
@@ -85,7 +85,7 @@ namespace Yatzy
                         }
                         if (FiveDice.varians)
                         {
-                            float v = (float)_game.vari[NodeNo];
+                            float v = (float)_game.Vari[NodeNo];
                             //						pout.print(" " + ((System.Double)v).ToString("F4"));
                             try
                             {

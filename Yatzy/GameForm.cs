@@ -22,10 +22,10 @@ namespace Yatzy
         {
             InitializeComponent();
 
-            gameSizes.Add("Maxiyatzy", new Size(885, 415));
-            gameSizes.Add("Yatzy", new Size(602, 449));
-            gameSizes.Add("Yahtzee", new Size(602, 413));
-            gameSizes.Add("Balut", new Size(602, 432));
+            gameSizes.Add("Maxiyatzy", new Size(885, 436));
+            gameSizes.Add("Yatzy", new Size(602, 470));
+            gameSizes.Add("Yahtzee", new Size(602, 434));
+            gameSizes.Add("Balut", new Size(602, 449));
 
             string folder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             _gamesFolder = Path.Combine(folder, Settings.Default.Repository);
@@ -49,6 +49,10 @@ namespace Yatzy
             InitForm(CollectGameName());
         }
 
+        /// <summary>
+        /// XML based, now obsolete, use JSON based GameStats instead
+        /// </summary>
+        /// <param name="gameText"></param>
         private void ShowHiScore(string gameText)
         {
             string ScoreFile = Path.Combine(_gamesFolder, ScoresFileName);
@@ -116,6 +120,12 @@ namespace Yatzy
             _score = null;
         }
 
+        /// <summary>
+        /// Use GameStats instead. The new idea is to pull high scores instead of push.
+        /// </summary>
+        /// <param name="game"></param>
+        /// <param name="gamerName"></param>
+        /// <param name="commenced"></param>
         private void CheckHiScore(GameOfDice game, string gamerName, DateTime commenced)
         {
             string ScoreFile = Path.Combine(_gamesFolder, ScoresFileName);
@@ -287,12 +297,23 @@ namespace Yatzy
             var collectPlayerName = new PlayerName();
 
             GameOfDice.ChosenLanguage = ChosenLanguage;
-            GamePanel computerPanel = new ComputerPanel(HalGame, _computerPlaysFirst ? (GamePanel.CheckHiScore) null : CheckHiScore, InitForm) { DieColor = Color.Blue, };
-            GamePanel humanPanel = new HumanPanel(HumanGame, collectPlayerName.UserName, _computerPlaysFirst ? CheckHiScore : (GamePanel.CheckHiScore)null, InitForm) { DieColor = Color.Red };
+            GamePanel computerPanel = new ComputerPanel(HalGame, InitForm, ShowStatus) { DieColor = Color.Blue, };
+            GamePanel humanPanel = new HumanPanel(HumanGame, collectPlayerName.UserName, InitForm, ShowStatus) { DieColor = Color.Red };
             computerPanel.OtherPanel = humanPanel;
             humanPanel.OtherPanel = computerPanel;
             scorePanels.Controls.Add(_computerPlaysFirst ? computerPanel : humanPanel, 0, 0);
             scorePanels.Controls.Add(_computerPlaysFirst ? humanPanel : computerPanel, 1, 0);
+
+            if (_computerPlaysFirst)
+            {
+                toolStripStatusLabel2.ForeColor = Color.Blue;
+                toolStripStatusLabel3.ForeColor = Color.Red;
+            }
+            else
+            {
+                toolStripStatusLabel3.ForeColor = Color.Blue;
+                toolStripStatusLabel2.ForeColor = Color.Red;
+            }
 
             Controls.Add(scorePanels);
 
@@ -326,92 +347,6 @@ namespace Yatzy
 
         private static readonly Random DiceGen = new Random();
         private bool _computerPlaysFirst = DiceGen.Next(2) == 0;
-
-        private static void AutoGame(GamePanel panel)
-        {
-            GameOfDice game = panel.Game;
-            int bestScore;
-            int bestScoreCol;
-            panel.DiceVec = new int[game.Dice];
-            panel.DiceRoll = new RollState[game.Dice];
-            int roll;
-            //for (var i = 0; i < game.Dice; i++)
-            //{
-            //    panel.DiceVec[i] = DiceGen.Next(1, 7);
-            //}
-            for (roll = 1; roll <= 3 + game.SavedRolls; roll++)
-            {
-                var rolling = false;
-                
-                // evaluate the roll. If we are lucky it is good already.
-                BestChoice(panel, game, game.GradeIt, out bestScoreCol, out bestScore);
-                if (bestScore == 100)
-                {
-                    BestChoice(panel, game, game.ValueIt, out bestScoreCol, out bestScore);
-                    if (bestScore >= 15)
-                    {
-                        break;
-                    }
-                }
-
-                for (var i = 0; i < game.Dice; i++)
-                {
-                    if (panel.DiceRoll[i] != RollState.HoldMe)
-                    {
-                        if (panel.DiceVec[i] == 6)
-                        {
-                            panel.DiceRoll[i] = RollState.HoldMe;
-                        }
-                        else
-                        {
-                            panel.DiceRoll[i] = RollState.RollMe;
-                            ComputerPanel cPanel = panel as ComputerPanel;
-                            if (cPanel != null)
-                            {
-                                cPanel.Reroll();
-                            }
-                            rolling = true;
-                        }
-                    }
-                }
-                if (!rolling)
-                {
-                    break; // save a roll or two (only MaxiYatzy takes advantage though)
-                }
-            }
-
-            var bestScoreRow = BestChoice(panel, game, game.ValueIt, out bestScoreCol, out bestScore);
-
-            if (bestScoreRow >= 0)
-            {
-                var itemStr = string.Format("{0}.{1}", bestScoreRow, bestScoreCol);
-                panel.ScoreIt(itemStr, roll);
-            }
-        }
-
-        private delegate int EvalScore(int[] vec, int bestRow);
-
-        private static int BestChoice(GamePanel panel, GameOfDice game, EvalScore es, out int bestScoreCol, out int bestScore)
-        {
-            bestScore = -1;
-            int bestScoreRow = -1;
-            bestScoreCol = -1;
-            for (var row = 0; row < game.UsableItems; row++)
-            {
-                for (var col = 0; col < game.UsableScoreBoxesPerItem; col++)
-                {
-                    if (panel.UsedScores[row, col]) continue;
-                    var diceValue = es(panel.DiceVec, row);
-                    if (diceValue > bestScore)
-                    {
-                        bestScore = diceValue;
-                        bestScoreRow = row;
-                        bestScoreCol = col;
-                    }
-                }
-            }
-            return bestScoreRow;
-        }
 
 
         /// <summary>
@@ -533,9 +468,18 @@ namespace Yatzy
             Close();
         }
 
-        private void OnHiScore(object sender, EventArgs e)
+        private void OnCurrentHiScores(object sender, EventArgs e)
         {
-            //ShowHiScore(CollectGameName());
+            GameStats.ShowHiScores(CollectGameName(), Settings.Default.CurentScoreCutOff);
+        }
+
+        private void OnAllTimeHiScores(object sender, EventArgs e)
+        {
+            GameStats.ShowHiScores(CollectGameName(), 100*365);
+        }
+
+        private void OnMatchScore(object sender, EventArgs e)
+        {
             GameStats.ShowMatches(CollectGameName());
         }
 
@@ -546,14 +490,15 @@ namespace Yatzy
 
         private void OnAbout(object sender, EventArgs e)
         {
+            var x = Application.ProductVersion;
             MessageBox.Show("PhDGames©\n" +
                             "Created by Peter Hegelund\n" +
-                            "Version 0.8.0.0, March 2015\n" +
+                            "Version " + x + ", March 2015\n" +
                             "Programmed in C#", "About " + HumanGame,
                 MessageBoxButtons.OK, MessageBoxIcon.None);
         }
 
-        public void MyHelp(Control parent /*, myHelpEnum topic*/)
+        private void MyHelp(Control parent /*, myHelpEnum topic*/)
         {
             // The file to display is chosen by the value of the topic.
             switch (0)
@@ -641,5 +586,31 @@ namespace Yatzy
             }
         }
 
+        public void ShowStatus(Type panel, string status)
+        {
+            if (_computerPlaysFirst)
+            {
+                if (panel == typeof (ComputerPanel))
+                {
+                    toolStripStatusLabel2.Text = string.Format(status);
+                }
+                else
+                {
+                    toolStripStatusLabel3.Text = string.Format(status);
+                }
+            }
+            else
+            {
+                if (panel == typeof(ComputerPanel))
+                {
+                    toolStripStatusLabel3.Text = string.Format(status);
+                }
+                else
+                {
+                    toolStripStatusLabel2.Text = string.Format(status);
+                }
+            }
+            statusStrip1.Refresh();
+        }
     }
 }

@@ -17,5 +17,11 @@
     <Setting Name="Repository" Type="System.String" Scope="User">
       <Value Profile="(Default)">PHDGames</Value>
     </Setting>
+    <Setting Name="TopResults" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="CurentScoreCutOff" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">30</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

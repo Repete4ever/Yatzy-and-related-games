@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 
@@ -10,8 +11,8 @@ namespace Yatzy
 {
     public partial class GameStats : Form
     {
-        private DataTable _editedScoreTable;
-        private readonly List<GameStat> _gameStats;
+        private DataTable _matchTable;
+        private readonly List<MatchStat> _matchStats;
         private readonly string _matchFile;
         private int _addedMatches;
 
@@ -27,7 +28,7 @@ namespace Yatzy
                 using (var stream = File.OpenText(_matchFile))
                 {
                     string json = stream.ReadToEnd();
-                    _gameStats = JsonConvert.DeserializeObject<List<GameStat>>(json);
+                    _matchStats = JsonConvert.DeserializeObject<List<MatchStat>>(json);
                 }
             }
             catch (Exception ex)
@@ -39,7 +40,7 @@ namespace Yatzy
         /// <summary>
         /// Get the data source
         /// </summary>
-        public object Source
+        private object Source
         {
             set
             {
@@ -47,60 +48,145 @@ namespace Yatzy
             }
         }
 
-        public void AddMatch(GameStat gameStat)
+        public void AddMatch(MatchStat matchStat)
         {
             _addedMatches++;
-            _gameStats.Insert(0, gameStat);
-            ShowMatches(GameForm.CollectGameName());
+            _matchStats.Insert(0, matchStat);
+            //ShowMatches(GameForm.CollectGameName());
         }
 
-        private void AddRow(GameStat gameStat)
+        private int matches;
+        private decimal victories;
+
+        private void AddRow(MatchStat matchStat)
         {
-            TimeSpan duration = gameStat.Ended - gameStat.Started;
-            string matchUp = string.Format("{0} v {1}", gameStat.PlayerA, gameStat.PlayerB);
+            TimeSpan duration = matchStat.Ended - matchStat.Started;
+            duration = new TimeSpan(duration.Hours, duration.Minutes, duration.Seconds);
+            string matchUp = string.Format("{0} v {1}", matchStat.PlayerA, matchStat.PlayerB);
             var score =
-                gameStat.GameName == "Balut"
+                matchStat.GameName == "Balut"
                 ?
-                string.Format("{2}({0}) - {3}({1})", gameStat.ScoreA, gameStat.ScoreB, gameStat.PointsA, gameStat.PointsB)
+                string.Format("{2}({0}) - {3}({1})", matchStat.ScoreA, matchStat.ScoreB, matchStat.PointsA, matchStat.PointsB)
                 :
-                string.Format("{0} - {1}", gameStat.ScoreA, gameStat.ScoreB);
-            bool gameNotFinished = gameStat.MaxRound > gameStat.RoundA || gameStat.MaxRound > gameStat.RoundB;
+                string.Format("{0} - {1}", matchStat.ScoreA, matchStat.ScoreB);
+            bool gameNotFinished = matchStat.MaxRound > matchStat.RoundA || matchStat.MaxRound > matchStat.RoundB;
             string winText;
             if (gameNotFinished)
             {
                 winText = string.Format("Only {0} % finished",
-                    (gameStat.RoundA + gameStat.RoundB) * 100 / (2*gameStat.MaxRound));
+                    (matchStat.RoundA + matchStat.RoundB) * 100 / (2*matchStat.MaxRound));
             }
             else
             {
-                bool draw = gameStat.PointsA == gameStat.PointsB && gameStat.ScoreA == gameStat.ScoreB;
+                matches++;
+                bool draw = matchStat.PointsA == matchStat.PointsB && matchStat.ScoreA == matchStat.ScoreB;
                 if (draw)
+                {
                     winText = "==";
+                    victories += 0.5m;
+                }
                 else
                 {
-                    bool aWinner = gameStat.PointsA > gameStat.PointsB || gameStat.PointsA == gameStat.PointsB && gameStat.ScoreA > gameStat.ScoreB;
-                    winText = aWinner ? gameStat.PlayerA : gameStat.PlayerB;
+                    bool aWinner = matchStat.PointsA > matchStat.PointsB || matchStat.PointsA == matchStat.PointsB && matchStat.ScoreA > matchStat.ScoreB;
+                    winText = aWinner ? matchStat.PlayerA : matchStat.PlayerB;
+                    if (winText.StartsWith("HAL"))
+                    {
+                        victories++;
+                    }
                 }
             }
-            _editedScoreTable.Rows.Add(matchUp, gameStat.Started, duration, score, winText);
+            _matchTable.Rows.Add(matchUp, matchStat.Started, duration, score, winText);
         }
 
         public void ShowMatches(string gameText = "")
         {
-            _editedScoreTable = new DataTable();
-            _editedScoreTable.Columns.Add("Match Up", typeof(string));
-            _editedScoreTable.Columns.Add("Started", typeof(DateTime));
-            _editedScoreTable.Columns.Add("Duration", typeof(TimeSpan));
-            _editedScoreTable.Columns.Add("Score", typeof(string));
-            _editedScoreTable.Columns.Add("Winner", typeof(string));
-            foreach (var gameStat in _gameStats)
+            _matchTable = new DataTable();
+            _matchTable.Columns.Add("Match Up", typeof(string));
+            _matchTable.Columns.Add("Started", typeof(DateTime));
+            _matchTable.Columns.Add("Duration", typeof(TimeSpan));
+            _matchTable.Columns.Add("Score", typeof(string));
+            _matchTable.Columns.Add("Winner", typeof(string));
+            foreach (var gameStat in _matchStats)
             {
                 if (gameText == "" || gameStat.GameName == gameText)
                 {
                     AddRow(gameStat);
                 }
             }
-            Source = _editedScoreTable;
+            Source = _matchTable;
+            Text = gameText + " Matches";
+
+            if (matches > 1)
+            {
+                toolStripStatusLabel1.Text = string.Format("HAL is {0} - {1}", victories, matches - victories);
+                statusStrip1.Refresh();
+                
+            }
+            ShowDialog();
+
+            matches = 0;
+            victories = 0;
+        }
+
+        public void ShowHiScores(string gameText, int cutOff)
+        {
+            var hiScore = new DataTable();
+            hiScore.Columns.Add("Player", typeof(string));
+            hiScore.Columns.Add("Date", typeof(DateTime));
+            if (gameText == "Balut")
+            {
+                hiScore.Columns.Add("Points", typeof(int));
+            }
+            hiScore.Columns.Add("Score", typeof(int));
+            List<GameStat> scores = new List<GameStat>();
+            foreach (MatchStat matchStat in _matchStats)
+            {
+                if (matchStat.GameName != gameText) continue;
+                if (matchStat.MaxRound > matchStat.RoundA) continue;
+                if (matchStat.MaxRound > matchStat.RoundB) continue;
+                // only completed matches of the specified type are reckoned
+                DateTime ended = matchStat.Ended.Date;
+                if (ended < DateTime.Today.AddDays(-cutOff)) continue;
+                // only recent results are considered
+                GameStat gameA = new GameStat();
+                GameStat gameB = new GameStat();
+                gameA.Player = matchStat.PlayerA;
+                gameB.Player = matchStat.PlayerB;
+                gameA.Date = ended;
+                gameB.Date = ended;
+                gameA.Score = matchStat.ScoreA;
+                gameB.Score = matchStat.ScoreB;
+                gameA.Points = matchStat.PointsA;
+                gameB.Points = matchStat.PointsB;
+                scores.Add(gameA);
+                scores.Add(gameB);
+            }
+
+            var gameStats = scores.OrderByDescending(i => i.Points).ThenByDescending(j => j.Score).Take(Properties.Settings.Default.TopResults).ToList();
+            int sum = 0;
+            foreach (var top in gameStats)
+            {
+                if (gameText == "Balut")
+                {
+                    hiScore.Rows.Add(top.Player, top.Date, top.Points, top.Score);
+                    sum += top.Points;
+                }
+                else
+                {
+                    hiScore.Rows.Add(top.Player, top.Date, top.Score);
+                    sum += top.Score;
+                }
+            }
+            Source = hiScore;
+            int count = gameStats.Count();
+            string days = cutOff < 1000 ? "last " + cutOff + " days" : "of all time";
+            Text = gameText + " Top " + Math.Min(Properties.Settings.Default.TopResults, count) + " (" + days + ")";
+            if (count > 1)
+            {
+                toolStripStatusLabel1.Text = string.Format("Game average is {0}", sum / gameStats.Count());
+                statusStrip1.Refresh();
+            }
+
             ShowDialog();
         }
 
@@ -108,7 +194,7 @@ namespace Yatzy
         {
             if (_addedMatches == 0)
                 return;
-            string json = JsonConvert.SerializeObject(_gameStats, Formatting.Indented);
+            string json = JsonConvert.SerializeObject(_matchStats, Formatting.Indented);
             try
             {
                 File.WriteAllText(_matchFile, json);
@@ -162,7 +248,7 @@ namespace Yatzy
         }
     }
 
-    public class GameStat
+    public class MatchStat
     {
         public string GameName { get; set; }
         public DateTime Started { get; set; }
@@ -178,5 +264,13 @@ namespace Yatzy
         public int PointsB { get; set; }
         public int ScoreB { get; set; }
         public int RoundB { get; set; }
+    }
+
+    public class GameStat
+    {
+        public DateTime Date { get; set; }
+        public string Player { get; set; }
+        public int Points { get; set; }
+        public int Score { get; set; }
     }
 }

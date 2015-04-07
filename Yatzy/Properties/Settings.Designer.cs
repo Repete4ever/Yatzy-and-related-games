@@ -82,5 +82,29 @@ namespace Yatzy.Properties {
                 this["Repository"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public int TopResults {
+            get {
+                return ((int)(this["TopResults"]));
+            }
+            set {
+                this["TopResults"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public int CurentScoreCutOff {
+            get {
+                return ((int)(this["CurentScoreCutOff"]));
+            }
+            set {
+                this["CurentScoreCutOff"] = value;
+            }
+        }
     }
 }

@@ -2,17 +2,16 @@
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 
 namespace Yatzy
 {
     public partial class GamePanel : Panel
     {
-        public delegate void CheckHiScore(GameOfDice game, string gamer, DateTime started);
-
-        public delegate void AutoGame(GamePanel panel);
-
         public delegate void InitForm(string gameText);
+
+        public delegate void ShowStatus(Type panel, string status);
 
         private const int OptimalDieSize = 66;
 
@@ -48,9 +47,9 @@ namespace Yatzy
         protected string gamerName;
         private readonly DateTime commenced;
 
-        private readonly CheckHiScore checkHiScore;
-
         private readonly InitForm _changeGame;
+
+        protected readonly ShowStatus _status;
 
         private int OldRollCounter;
         protected int RollCounter;
@@ -58,9 +57,9 @@ namespace Yatzy
         public int[] DiceVec;
 
         //private readonly AutoGame _computerGame;
-        public GamePanel OtherPanel { get; set; }
+        public GamePanel OtherPanel { protected get; set; }
 
-        protected GamePanel(GameOfDice game, string gamerName, CheckHiScore checkHiScore, InitForm changeGame)
+        protected GamePanel(GameOfDice game, string gamerName, InitForm changeGame, ShowStatus showStatus)
         {
             ResizeRedraw = true; 
             
@@ -77,13 +76,14 @@ namespace Yatzy
             Game = game;
             this.gamerName = gamerName;
             commenced = DateTime.Now;
-            this.checkHiScore = checkHiScore;
+
             _changeGame = changeGame;
+            _status = showStatus;
 
             DrawPanel();
         }
 
-        public Color DieColor { get; set; }
+        public Color DieColor { protected get; set; }
 
         /// <summary>
         /// In case the language changes
@@ -100,7 +100,7 @@ namespace Yatzy
             }
         }
 
-        public void ToggleButtonsVisibility()
+        private void ToggleButtonsVisibility()
         {
             TerningeKast.Visible ^= true;
             tableLayoutPanel1.Visible ^= true;
@@ -234,17 +234,14 @@ namespace Yatzy
             //StartAgain.Location = new Point(0, DieSize + 5 * DieDist + 27);
             tableLayoutPanel1.Location = new Point(0, DieSize + 5 * DieDist + 27);
             tableLayoutPanel1.Size = new Size(DieSize * Game.Dice + DieDist * (Game.Dice - 1), 26);
-            var size = StartAgain.Size;
-            //if (size.Height < 23)
-            //    StartAgain.Size = new Size(75,23);
 
             nameLabel.Text = GamerName;
-            nameLabel.Location = new Point(0, DieSize + 5 * DieDist + 54);
+            nameLabel.Location = new Point(0, DieSize + 5 * DieDist + 60);
             nameLabel.Size = oneSizeFitsAll;
             nameLabel.ForeColor = DieColor;
         }
 
-        private int Rounds;
+        protected int Rounds;
 
         public GameForm.RollState[] DiceRoll { get; set; }
 
@@ -253,11 +250,13 @@ namespace Yatzy
         /// </summary>
         private void ShowCurrentMatchStats()
         {
-            GameStat stat = new GameStat
+            DateTime now = DateTime.Now;
+            now = now.AddMilliseconds(-now.Millisecond); // do not need ms
+            MatchStat stat = new MatchStat
             {
                 GameName = GameForm.CollectGameName(),
                 Started = commenced,
-                Ended = DateTime.Now,
+                Ended = now,
                 MaxRound = Game.MaxRound,
                 PlayerA = GamerName,
                 PlayerB = OtherPanel.GamerName,
@@ -382,7 +381,7 @@ namespace Yatzy
         public bool[,] UsedScores;
         protected int DieSize;
         protected int DieDist;
-        private string TerningeKastText { get; set; }
+        protected string TerningeKastText { get; set; }
 
         public static bool Touchy { get; set; }
 
@@ -520,25 +519,6 @@ namespace Yatzy
             }
         }
 
-        protected void myMouseDecider(object sender)
-        {
-            var control = (Control)sender;
-            ScoreIt(control.Tag.ToString(), RollCounter);
-
-            if (Rounds == Game.MaxRound)
-            {
-                TerningeKastText = "";
-                TerningeKast.Enabled = false;
-                if (checkHiScore != null)
-                {
-                    checkHiScore(OtherPanel.Game, OtherPanel.gamerName, commenced);
-                    checkHiScore(Game, gamerName, commenced);
-                    ShowScore();
-                }
-            }
-            TogglePanels();
-        }
-
         public void UnDecider()
         {
             for (var d = 0; d < Game.Dice; d++)
@@ -607,6 +587,8 @@ namespace Yatzy
             TerningeKast.Text = TerningeKastText;
             TerningeKast.Enabled = false;
 
+            Judge();
+
             TargetDie = -1;
 
             RollCounter++;
@@ -624,6 +606,13 @@ namespace Yatzy
                         timer1.Start();
                     }
             }
+        }
+
+        /// <summary>
+        /// Judging takes place in HumanPanel
+        /// </summary>
+        protected virtual void Judge()
+        {
         }
 
         /// <summary>
@@ -781,22 +770,54 @@ namespace Yatzy
             _selectedGame = box.SelectedItem.ToString();
         }
 
-        /// <summary>
-        /// fjerner en tabelindgang i "number" og skubber paa plads
-        /// returnerer opdateret "nc" (2-tal-system)
-        /// </summary>
-        /// <param name="nu"></param>
-        /// <param name="nam"></param>
-        /// <param name="nc"></param>
-        /// <param name="number"></param>
-        /// <returns></returns>
-        protected int modify(int nu,int nam,int nc,int[] number)
+        protected int ItemNode(int item)
         {
-            for (int i=0; i<nu; i++)
-            if (number[i]==nam)
-                for (int j=i; j< nu-1; j++) number[j]=number[j+1];
-            nc-=1<<(nam-1);
-            return nc;
+            return (int) Math.Pow(Game.UsableScoreBoxesPerItem + 1, item);
+        }
+
+        /// <summary>
+        /// Compute current node number. 
+        /// Use UsableScoreBoxesPerItem + 1 as radix to support Balut as well as Yazty-type games
+        /// </summary>
+        /// <returns></returns>
+        protected int CurrentNodeNo()
+        {
+            int nodeNo = 0;
+            for (var row = 0; row < Game.UsableItems; row++)
+            {
+                for (var col = 0; col < Game.UsableScoreBoxesPerItem; col++)
+                {
+                    if (UsedScores[row, col]) continue;
+                    nodeNo += ItemNode(row);
+                }
+            }
+
+            return nodeNo;
+        }
+
+        /// <summary>
+        /// Isolate active items (and subitems for Balut).
+        /// This is a prereq for computation af the optimal game plan
+        /// </summary>
+        /// <param name="nodeNo">in radix UsableScoreBoxesPerItem+1</param>
+        /// <param name="unusedItems">int[Game.UsableItems,2]</param>
+        /// <returns>number of active items</returns>
+        protected int ActiveItems(int nodeNo, int[,] unusedItems)
+        {
+            FiveDice AiGame = Game as FiveDice;
+            Contract.Assume(AiGame != null);
+            var ActiveI = 0;
+            for (int i = 0; i < Game.UsableItems; i++)
+            {
+                int d = AiGame.ActiveItem(nodeNo, i);
+                if (d > 0)
+                {
+                    unusedItems[ActiveI, 0] = i + 1;
+                    unusedItems[ActiveI, 1] = d;
+                    ActiveI++;
+                }
+            }
+            return ActiveI;
         }
     }
 

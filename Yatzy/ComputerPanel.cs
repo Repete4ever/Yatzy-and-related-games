@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Media;
 using System.Speech.Synthesis;
@@ -15,8 +16,8 @@ namespace Yatzy
         private string _nameLabelText;
         private Color _myDieColor;
 
-        public ComputerPanel(GameOfDice game, CheckHiScore checkHiScore, InitForm changeGame)
-            : base(game, "HAL 6000", checkHiScore, changeGame)
+        public ComputerPanel(GameOfDice game, InitForm changeGame, ShowStatus showStatus)
+            : base(game, "HAL 6000", changeGame, showStatus)
         {
             TerningeKast.Visible = false;
             tableLayoutPanel1.Visible = false;
@@ -129,50 +130,53 @@ namespace Yatzy
 
         protected override void AutoDecide()
         {
+            _status(typeof(ComputerPanel), "");
+
             FiveDice AiGame = Game as FiveDice;
             if (AiGame != null)
             {
-                int nodeNo = 0;
-                for (var row = 0; row < Game.UsableItems; row++)
+                if (AiGame.Bonus(0) != "" && !(AiGame is Balut))
                 {
-                    for (var col = 0; col < Game.UsableScoreBoxesPerItem; col++)
-                    {
-                        if (UsedScores[row, col]) continue;
-                        nodeNo += 1 << row;
-                    }
+                    //_status(typeof(ComputerPanel),string.Format("Bonus settled"));
                 }
+
+                int nodeNo = CurrentNodeNo();
+                if (AiGame is Balut)
+                {
+                    String Base5 = FiveDice.MyItoa(nodeNo, 5);
+                }
+                
                 int[,] UnusedI = new int[Game.UsableItems, 2];
-                var ActiveI = 0;
-                for (int i = 0; i < Game.UsableItems; i++)
-                {
-                    int d = AiGame.ActiveItem(nodeNo, i);
-                    if (d > 0)
-                    {
-                        UnusedI[ActiveI, 0] = i + 1;
-                        UnusedI[ActiveI, 1] = d;
-                        ActiveI++;
-                    }
-                }
+                var ActiveI = ActiveItems(nodeNo, UnusedI);
+
                 int[] orderRoll = Game.OrderRoll(DiceVec);
                 AiGame.GamePlan(3, orderRoll, UnusedI, nodeNo, ActiveI, 0);
                 int seqno = AiGame.Seqno(orderRoll);
-                if (RollCounter == 3)
-                {
-                    int name = AiGame.Name[seqno];
-                    var itemStr = string.Format("{0}.{1}", name, 0); // TODO Balut
-                    ScoreIt(itemStr, RollCounter);
-                    TogglePanels();
-                    return;
-                }
-                int k = AiGame.Keep[seqno, RollCounter - 1];
+                int keepSeqno = seqno;
                 int[] nkeep = new int[6];
-                AiGame.Status(k, nkeep);
-                int keepSeqno = AiGame.Seqno(nkeep);
+                if (RollCounter < 3)
+                {
+                    int k = AiGame.Keep[seqno, RollCounter - 1];
+                    AiGame.Status(k, nkeep);
+                    keepSeqno = AiGame.Seqno(nkeep);
+                }
+                
                 if (seqno == keepSeqno)
                 {
                     int name = AiGame.Name[seqno];
-                    var itemStr = string.Format("{0}.{1}", name, 0); // TODO Balut
+                    int d = AiGame.ActiveItem(nodeNo, name) - 1;
+                    d ^= Game.UsableScoreBoxesPerItem - 1; // use entries left to right
+                    var itemStr = string.Format("{0}.{1}", name, d);
+                    var keepDice = string.Join(" ", DiceVec);
                     ScoreIt(itemStr, RollCounter);
+                    nodeNo -= ItemNode(name);
+                    _status(
+                        typeof(ComputerPanel),
+                        string.Format("Expect({0})={1} score {2}",
+                        nodeNo,
+                        (AiGame.Expect[nodeNo] + AiGame.GameScore).ToString("F1"),
+                        keepDice
+                    )); 
                     TogglePanels();
                 }
                 else
@@ -189,6 +193,7 @@ namespace Yatzy
                                 if (DiceVec[j] == i + 1 && DiceRoll[j] != GameForm.RollState.RollMe)
                                 {
                                     DiceRoll[j] = GameForm.RollState.RollMe;
+                                    break;
                                 }
                             }
                         }
@@ -244,7 +249,7 @@ namespace Yatzy
             }
         }
 
-        public struct ScoreType
+        private struct ScoreType
         {
             public int score;
             public int grade; // 0..100

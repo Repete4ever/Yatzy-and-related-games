@@ -70,7 +70,7 @@ namespace Yatzy
             return item - 6;
         }
 
-        protected override int SubNode(int Node, int item, int SubItem)
+        protected override int SubNode(int Node, int item)
         {
             return Node - (1 << item);
         }

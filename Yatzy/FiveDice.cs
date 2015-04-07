@@ -11,8 +11,8 @@ namespace Yatzy
         /// 
         public static readonly bool varians = true; // set to false to ease overhead added by computing (quasi-optimal) game plan
 
-        public double[] expect;
-        public double[] vari;
+        public double[] Expect { get; private set; }
+        private double[] vari;
         private readonly double[,] varia = new double[462, 3];
 
         private readonly double[,] value = new double[462, 3];
@@ -26,6 +26,17 @@ namespace Yatzy
         {
             get { return name; }
         }
+
+        public double[] Vari
+        {
+            get { return vari; }
+        }
+
+        public double[,] Value
+        {
+            get { return value; }
+        }
+
 
         static public int power(int f, int n)
         { /* computes f to the n'th power */
@@ -48,7 +59,7 @@ namespace Yatzy
         /// <param name="val"></param>
         /// <param name="radix"></param>
         /// <returns></returns>
-        static public string MyItoa(int val, int radix)
+        public static string MyItoa(int val, int radix)
         {
             if (val == 0)
                 return "0"; // boundary case!
@@ -180,7 +191,7 @@ namespace Yatzy
             keep[index, ja - 1] = kp;
         }
 
-        protected abstract int SubNode(int Node, int Item, int SubItem);
+        protected abstract int SubNode(int Node, int Item);
         public abstract int ActiveItem(int Node, int item);
 
         /// <summary>
@@ -290,17 +301,15 @@ namespace Yatzy
                                                     for (i = 0; i < ActiveI; i++)
                                                     {
                                                         var item = UnusedI[i, 0] - 1;
-                                                        int SI = UnusedI[i, 1];
-                                                        double b = pts[item] + expect[SubNode(NodeNo, item, SI)];
+                                                        double b = pts[item] + Expect[SubNode(NodeNo, item)];
                                                         if (b >= a)
                                                         {
                                                             a = b;
                                                             it = item;
-                                                            SubItem = SI;
                                                         }
                                                     }
                                                     if (varians)
-                                                        varia[index, 2] = vari[SubNode(NodeNo, it, SubItem)];
+                                                        varia[index, 2] = vari[SubNode(NodeNo, it)];
                                                 }
                                                 value[index, 2] = a;
                                                 name[index] = it;
@@ -344,7 +353,7 @@ namespace Yatzy
                                                 break;
                                             case 5:
                                                 if (!varians)
-                                                    expect[NodeNo] += prob[index] * value[index, 0];
+                                                    Expect[NodeNo] += prob[index] * value[index, 0];
                                                 else
                                                 {
                                                     e += prob[index] * (v = value[index, 0]);
@@ -362,7 +371,7 @@ namespace Yatzy
             }
             if (LevelOfAnalysis >= 6 && varians)
             {
-                expect[NodeNo] = e;
+                Expect[NodeNo] = e;
                 vari[NodeNo] -= e * e;
             }
             /* ---delvis udfyldning af resterende tabeller ved */
@@ -431,6 +440,11 @@ namespace Yatzy
             inn[5] = 0;
         }
 
+        /// <summary>
+        /// Convert a dice seq no into actual dice array
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="nz"></param>
         public void Status(int index, int[] nz)
         {
             int i;
@@ -461,6 +475,7 @@ namespace Yatzy
             nz[5] = nn + 1;
         }
 
+#if MODIFY
         /// <summary>
         /// fjerner en tabelindgang i "number" og skubber paa plads
         /// returnerer opdateret "nc" (2-tal-system)
@@ -478,6 +493,7 @@ namespace Yatzy
             nc -= 1 << (nam - 1);
             return nc;
         }
+#endif
 
         public override void InhabitTables()
         {
@@ -486,7 +502,7 @@ namespace Yatzy
 
             int Nodes = GameNodes;
             float e = 0;
-            expect = new double[Nodes + 1];
+            Expect = new double[Nodes + 1];
             if (varians)
             {
                 vari = new double[Nodes + 1];
@@ -519,7 +535,7 @@ namespace Yatzy
                                 float v = vtbl.ReadSingle();
                                 vari[i] = v;
                             }
-                            expect[i] = e;
+                            Expect[i] = e;
                         }
                         catch (IOException)
                         {
